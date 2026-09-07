@@ -1,0 +1,157 @@
+// pnk ID — identity provider (PostgreSQL in production / Docker)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Primary identity (pnk ID)
+model User {
+  id           String   @id @default(cuid())
+  login        String   @unique
+  email        String?  @unique
+  phone        String?  @unique
+  passwordHash String
+  displayName  String?
+  firstName    String?
+  lastName     String?
+  gender       String?
+  birthDate    String?
+  timezone     String?  @default("(UTC+03:00) Москва")
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  sessions         Session[]
+  recoveryEmails   RecoveryEmail[]
+  qrChallenges     QrChallenge[]
+  consents         AppConsent[]
+  authCodes        AuthCode[]
+  refreshTokens    RefreshToken[]
+  supportMessages  SupportMessage[]
+}
+
+model Session {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash        String   @unique
+  deviceName       String?
+  deviceType       String?  // pc | phone | tablet
+  browser          String?
+  os               String?
+  location         String?
+  ip               String?
+  userAgent        String?
+  current          Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  lastSeenAt       DateTime @default(now())
+  expiresAt        DateTime
+  revokedAt        DateTime?
+
+  @@index([userId])
+}
+
+model RecoveryEmail {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, email])
+}
+
+/// QR login: desktop shows QR, phone (logged-in session) confirms
+model QrChallenge {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status      String   @default("pending") // pending | scanned | confirmed | expired | cancelled
+  sessionId   String?
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+  confirmedAt DateTime?
+
+  @@index([status])
+}
+
+/// OAuth2 client applications (pnk Mail, future services)
+model OAuthClient {
+  id           String   @id @default(cuid())
+  clientId     String   @unique
+  clientSecret String
+  name         String
+  description  String?
+  logoUrl      String?
+  redirectUris String // JSON array as string for SQLite
+  scopes       String   @default("[\"openid\",\"profile\",\"email\"]")
+  trusted      Boolean  @default(false) // first-party apps
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  consents      AppConsent[]
+  authCodes     AuthCode[]
+  refreshTokens RefreshToken[]
+}
+
+/// User granted access to a client app
+model AppConsent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  scopes    String   // JSON array
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+
+  @@unique([userId, clientId])
+}
+
+model AuthCode {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  redirectUri String
+  scopes    String
+  codeChallenge String?
+  codeChallengeMethod String?
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  scopes    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+}
+
+model SupportMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromRole  String   // user | support
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}

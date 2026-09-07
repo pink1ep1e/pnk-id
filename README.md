@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# pnk ID
 
-## Getting Started
+Единый identity provider для экосистемы pnk (аналог Сбер ID / Т‑Банк ID / Google Account).
 
-First, run the development server:
+Отдельный проект от `pnk-mail`. Почта подключится позже через OAuth2.
+
+## Стек
+
+- Next.js 15 (App Router) + API routes
+- Prisma + SQLite (локально)
+- bcryptjs (пароли), jose (JWT access tokens)
+- HttpOnly cookie-сессии
+- OAuth2 Authorization Code (+ PKCE) для сервисов
+- QR-вход (challenge → confirm → claim session)
+
+## Быстрый старт
 
 ```bash
+cd f:\pnk-id
+npm install
+npx prisma db push
+npm run db:seed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Откройте http://localhost:3100
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Демо-аккаунт после seed:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- логин: `demo`
+- пароль: `password123`
 
-## Learn More
+OAuth-клиент для почты:
 
-To learn more about Next.js, take a look at the following resources:
+- `client_id`: `pnk-mail`
+- `client_secret`: `pnk-mail-dev-secret`
+- redirect: `http://localhost:3000/oauth/callback`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## API
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Auth
 
-## Deploy on Vercel
+| Method | Path | Описание |
+|--------|------|----------|
+| POST | `/api/auth/register` | Регистрация |
+| POST | `/api/auth/login` | Вход |
+| POST | `/api/auth/logout` | Выход |
+| GET | `/api/auth/me` | Текущий пользователь |
+| POST | `/api/auth/qr` | Создать QR challenge |
+| GET | `/api/auth/qr?code=` | Статус QR |
+| PUT | `/api/auth/qr` | Скан/подтверждение (телефон) |
+| PATCH | `/api/auth/qr` | Получить сессию на десктопе |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Profile / security
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Method | Path | Описание |
+|--------|------|----------|
+| GET/PATCH | `/api/profile` | Профиль |
+| POST | `/api/security/password` | Смена пароля |
+| GET/DELETE | `/api/security/sessions` | Сессии |
+| GET/DELETE | `/api/apps` | Подключённые приложения |
+| GET/POST | `/api/support/messages` | Чат поддержки |
+
+### OAuth2 (для pnk Mail и других сервисов)
+
+1. Пользователь логинится в pnk ID
+2. Сервис редиректит на `/oauth/consent?client_id=pnk-mail&redirect_uri=...&scope=openid profile email`
+3. `POST /api/oauth/authorize` → `code`
+4. Сервис: `POST /api/oauth/token` с `grant_type=authorization_code`
+5. `GET /api/oauth/userinfo` с `Authorization: Bearer <access_token>`
+
+Scopes: `openid`, `profile`, `email`, `phone`
+
+## Подключение нового сервиса
+
+1. Добавьте запись `OAuthClient` в БД (или через seed)
+2. Укажите `redirectUris` и `scopes`
+3. На стороне сервиса реализуйте callback + обмен code→token
+4. Храните refresh_token и запрашивайте userinfo
+
+## Безопасность (локальный baseline)
+
+- Пароли: bcrypt cost 12
+- Сессии: opaque token, в БД только SHA-256 hash
+- Access token: короткоживущий JWT (1ч)
+- Refresh token: hash в БД, revoke при отзыве приложения
+- Cookie: HttpOnly, SameSite=Lax
+- QR: TTL 60с, одноразовый claim
+
+Перед продом смените `SESSION_SECRET` / `JWT_SECRET` в `.env`.
