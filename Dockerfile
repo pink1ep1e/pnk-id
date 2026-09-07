@@ -30,8 +30,7 @@ RUN npx prisma generate && npx next build \
 # Standalone Prisma CLI (+ engines) for entrypoint db push — not full app node_modules
 FROM node:20-bookworm-slim AS prisma-cli
 WORKDIR /prisma-cli
-RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/* \
-  && npm init -y && npm install prisma@6.19.0
+RUN npm init -y && npm install prisma@6.19.0
 
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app
