@@ -23,23 +23,29 @@ ARG JWT_SECRET=build-time-placeholder-min-32-characters!!
 ARG SESSION_SECRET=build-time-placeholder-min-32-characters!
 ENV JWT_SECRET=$JWT_SECRET
 ENV SESSION_SECRET=$SESSION_SECRET
-RUN npx prisma generate && npx next build
+RUN npx prisma generate && npx next build \
+  && npm prune --omit=dev \
+  && rm -rf /app/.next/cache
 
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
-RUN groupadd -r nodejs && useradd -r -g nodejs nextjs
+RUN apt-get update -y && apt-get install -y openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/* \
+  && groupadd -r nodejs && useradd -r -g nodejs nextjs
 
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY docker/entrypoint.sh ./entrypoint.sh
-RUN chmod +x ./entrypoint.sh && chown -R nextjs:nodejs /app
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+COPY --chown=nextjs:nodejs docker/entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
 
 USER nextjs
 EXPOSE 3100
