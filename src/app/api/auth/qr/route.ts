@@ -12,7 +12,7 @@ import {
 const QR_TTL_MS = 60_000;
 
 /** Create QR challenge (desktop login screen) */
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   const code = randomToken(24);
   const challenge = await prisma.qrChallenge.create({
     data: {

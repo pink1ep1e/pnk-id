@@ -477,7 +477,7 @@ function AvatarCropper({
       const signX = d.corner.includes("e") ? 1 : -1;
       const signY = d.corner.includes("s") ? 1 : -1;
       const delta = Math.abs(dx) > Math.abs(dy) ? dx * signX : dy * signY;
-      let size = d.osize + delta;
+      const size = d.osize + delta;
       let x = d.ox;
       let y = d.oy;
       if (d.corner.includes("w")) x = d.ox + (d.osize - size);
@@ -983,27 +983,29 @@ function SupportChat({
   const [sending, setSending] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const mapMsg = (m: {
-    id: string;
-    fromRole: string;
-    text: string;
-    createdAt: string;
-  }): Msg => {
-    const d = new Date(m.createdAt);
-    return {
-      id: m.id,
-      from: m.fromRole === "user" ? "user" : "support",
-      text: m.text,
-      time: `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
-    };
-  };
-
   useEffect(() => {
     void (async () => {
       const res = await fetch("/api/support/messages");
       const json = await res.json();
       if (json.ok && Array.isArray(json.data)) {
-        setMessages(json.data.map(mapMsg));
+        setMessages(
+          json.data.map(
+            (m: {
+              id: string;
+              fromRole: string;
+              text: string;
+              createdAt: string;
+            }) => {
+              const d = new Date(m.createdAt);
+              return {
+                id: m.id,
+                from: (m.fromRole === "user" ? "user" : "support") as Msg["from"],
+                text: m.text,
+                time: `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
+              };
+            },
+          ),
+        );
       }
     })();
   }, []);
