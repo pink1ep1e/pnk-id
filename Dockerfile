@@ -13,6 +13,12 @@ RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /v
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# Placeholders for prisma generate / next build (overridden at runtime by compose)
+ENV DATABASE_URL="postgresql://pnk:pnk@127.0.0.1:5432/pnk_id?schema=public"
+ENV APP_URL="http://localhost:3100"
+ENV NEXT_PUBLIC_MAIL_URL="http://localhost:3000"
+ENV JWT_SECRET="build-time-placeholder-min-32-characters!!"
+ENV SESSION_SECRET="build-time-placeholder-min-32-characters!"
 RUN npx prisma generate && npx next build
 
 FROM node:20-bookworm-slim AS runner
