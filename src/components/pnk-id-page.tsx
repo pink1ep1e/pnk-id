@@ -964,6 +964,21 @@ function EditProfileModal({
   );
 }
 
+function mapSupportMsg(m: {
+  id: string;
+  fromRole: string;
+  text: string;
+  createdAt: string;
+}): { id: string; from: "user" | "support"; text: string; time: string } {
+  const d = new Date(m.createdAt);
+  return {
+    id: m.id,
+    from: m.fromRole === "user" ? "user" : "support",
+    text: m.text,
+    time: `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
+  };
+}
+
 function SupportChat({
   userAvatar,
   letter,
@@ -988,24 +1003,7 @@ function SupportChat({
       const res = await fetch("/api/support/messages");
       const json = await res.json();
       if (json.ok && Array.isArray(json.data)) {
-        setMessages(
-          json.data.map(
-            (m: {
-              id: string;
-              fromRole: string;
-              text: string;
-              createdAt: string;
-            }) => {
-              const d = new Date(m.createdAt);
-              return {
-                id: m.id,
-                from: (m.fromRole === "user" ? "user" : "support") as Msg["from"],
-                text: m.text,
-                time: `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
-              };
-            },
-          ),
-        );
+        setMessages(json.data.map(mapSupportMsg));
       }
     })();
   }, []);
@@ -1031,7 +1029,7 @@ function SupportChat({
       if (json.ok) {
         const again = await fetch("/api/support/messages");
         const againJson = await again.json();
-        if (againJson.ok) setMessages(againJson.data.map(mapMsg));
+        if (againJson.ok) setMessages(againJson.data.map(mapSupportMsg));
       }
     } finally {
       setSending(false);
