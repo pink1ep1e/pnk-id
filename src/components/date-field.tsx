@@ -127,7 +127,7 @@ export function DateField({
   value,
   onChange,
   label,
-  placeholder = "ДД.ММ.ГГГГ",
+  placeholder = "Дата рождения",
   className,
   max,
   min,
@@ -151,11 +151,14 @@ export function DateField({
   const selected = parseISO(value);
   const today = useMemo(() => startOfDay(new Date()), []);
   const maxDate = useMemo(
-    () => (max ? parseISO(max) : { y: today.getFullYear(), m: today.getMonth(), d: today.getDate() }),
+    () =>
+      max
+        ? parseISO(max)
+        : { y: today.getFullYear(), m: today.getMonth(), d: today.getDate() },
     [max, today],
   );
   const minDate = useMemo(
-    () => min ? parseISO(min) : { y: 1900, m: 0, d: 1 },
+    () => (min ? parseISO(min) : { y: 1900, m: 0, d: 1 }),
     [min],
   );
 
@@ -228,43 +231,50 @@ export function DateField({
     setCursor({ y: dt.getFullYear(), m: dt.getMonth() });
   }
 
-  const triggerH = size === "lg" ? "h-[54px] md:h-[56px]" : "h-12";
+  const triggerH = size === "lg" ? "h-[56px] md:h-[58px]" : "h-14";
   const display = formatDisplay(value);
+  const floatLabel = label || placeholder;
+  const floated = open || Boolean(display);
 
   return (
     <div ref={rootRef} className={cn("relative", className)}>
-      {label ? (
-        <p className="text-[13px] text-white/45 font-[family-name:var(--font-manrope)] mb-2">
-          {label}
-        </p>
-      ) : null}
-
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "w-full rounded-[12px] px-4 md:px-5 flex items-center gap-3 text-left outline-none transition-[box-shadow,background-color]",
+          "relative w-full rounded-[16px] bg-transparent border border-white/5 border-2 px-4 md:px-5 flex items-center gap-3 text-left outline-none transition-colors",
           triggerH,
-          size === "md" ? "rounded-[14px] bg-[#24262e]" : "bg-[#0f1115]",
+          size === "md" && "px-4",
+          floated && "pt-[1.05rem] pb-1",
           open
-            ? size === "md"
-              ? "bg-[#2a2d36] shadow-[0_0_0_3px_rgba(0,102,255,0.18)]"
-              : "bg-[#12141a] shadow-[0_0_0_3px_rgba(0,102,255,0.22)]"
-            : size === "md"
-              ? "hover:bg-[#2a2d36] focus-visible:shadow-[0_0_0_3px_rgba(0,102,255,0.18)]"
-              : "hover:bg-[#12141a] focus-visible:shadow-[0_0_0_3px_rgba(0,102,255,0.22)]",
+            ? "border-[#0066ff]"
+            : "hover:border-white/10 focus-visible:border-[#0066ff]",
         )}
         aria-haspopup="dialog"
         aria-expanded={open}
       >
         <span
           className={cn(
-            "flex-1 min-w-0 text-[16px] md:text-[17px] font-[family-name:var(--font-manrope)] truncate",
-            display ? "text-white" : "text-white/35",
-            size === "md" && "text-[15px] md:text-[15px]",
+            "pointer-events-none absolute font-[family-name:var(--font-manrope)] text-white/35 transition-all duration-200 ease-out",
+            size === "lg" ? "left-4 md:left-5" : "left-4",
+            floated
+              ? "top-[0.45rem] text-[11px] md:text-[12px]"
+              : cn(
+                  "top-1/2 -translate-y-1/2",
+                  size === "lg" ? "text-[16px] md:text-[17px]" : "text-[15px]",
+                ),
           )}
         >
-          {display || placeholder}
+          {floatLabel}
+        </span>
+        <span
+          className={cn(
+            "flex-1 min-w-0 font-[family-name:var(--font-manrope)] truncate text-white",
+            size === "lg" ? "text-[16px] md:text-[17px]" : "text-[15px]",
+            !display && "opacity-0",
+          )}
+        >
+          {display || "\u00a0"}
         </span>
         {display ? (
           <span
@@ -373,9 +383,7 @@ export function DateField({
                         cell.inMonth && !isSelected && "text-white/85",
                         isToday && !isSelected && "ring-1 ring-[#0066ff]/55",
                         isSelected && "bg-[#0066ff] text-white font-semibold",
-                        !isSelected &&
-                          !disabled &&
-                          "hover:bg-white/[0.08]",
+                        !isSelected && !disabled && "hover:bg-white/[0.08]",
                         disabled && "opacity-25 pointer-events-none",
                       )}
                     >

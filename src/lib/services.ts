@@ -45,7 +45,7 @@ export const DEFAULT_SERVICE: ServiceBrand = {
   id: "id",
   clientIds: [],
   name: "pnk ID",
-  logoSrc: "/logo-id.svg",
+  logoSrc: "/logo-id-new.svg",
   logoAlt: "pnk ID",
   logoWidth: 180,
   logoHeight: 54,
@@ -83,8 +83,7 @@ export const SERVICES: ServiceBrand[] = [
     showInstall: true,
     installAndroidHref: `${MAIL_ORIGIN}/install?os=android`,
     installIosHref: `${MAIL_ORIGIN}/install?os=ios`,
-    qrHint:
-      "Отсканируйте код в приложении pnk почта, чтобы войти без пароля.",
+    qrHint: "Отсканируйте код в приложении pnk почта, чтобы войти без пароля.",
     postAuthUrl: `${MAIL_ORIGIN}/mail`,
     oauthClientId: "pnk-mail",
     oauthRedirectUri: `${MAIL_ORIGIN}/api/auth/callback/pnk-id`,
@@ -112,9 +111,7 @@ export function serviceKeyFromSearchParams(
   params: URLSearchParams | { get(name: string): string | null },
 ): string | null {
   const direct =
-    params.get("service") ||
-    params.get("client_id") ||
-    params.get("clientId");
+    params.get("service") || params.get("client_id") || params.get("clientId");
   if (direct) return direct;
 
   const next = params.get("next");
@@ -146,7 +143,10 @@ export function authHref(
   return qs ? `${path}?${qs}` : path;
 }
 
-export function formatFooterCopy(template: string, year = new Date().getFullYear()) {
+export function formatFooterCopy(
+  template: string,
+  year = new Date().getFullYear(),
+) {
   return template.replace("{year}", String(year));
 }
 
@@ -168,4 +168,3 @@ export function afterAuthPath(
   }
   return "/cabinet";
 }
-

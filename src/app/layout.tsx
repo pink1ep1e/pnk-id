@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   title: "pnk ID",
   description: "Единый безопасный аккаунт для сервисов pnk",
   icons: {
-    icon: "/logo-id-bg.svg",
+    icon: "/logo-id-bg-new.svg",
   },
 };
 

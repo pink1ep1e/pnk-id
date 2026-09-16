@@ -8,7 +8,7 @@ export function SelectField({
   value,
   options,
   onChange,
-  label,
+  label = "Выберите",
   className,
   size = "lg",
 }: {
@@ -38,42 +38,48 @@ export function SelectField({
     };
   }, [open]);
 
-  const triggerH = size === "lg" ? "h-[54px] md:h-[56px]" : "h-12";
+  const triggerH = size === "lg" ? "h-[56px] md:h-[58px]" : "h-14";
+  const floated = open || Boolean(value);
 
   return (
     <div ref={rootRef} className={cn("relative", className)}>
-      {label ? (
-        <p className="text-[13px] text-white/45 font-[family-name:var(--font-manrope)] mb-2">
-          {label}
-        </p>
-      ) : null}
-
       <button
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "w-full rounded-[12px] px-4 md:px-5 flex items-center justify-between gap-3 text-left outline-none transition-[box-shadow,background-color]",
+          "relative w-full rounded-[16px] cursor-pointer bg-transparent border border-white/5 border-2 px-4 md:px-5 flex items-center justify-between gap-3 text-left outline-none transition-colors",
           triggerH,
-          size === "md" && "rounded-[14px] px-4 text-[15px]",
-          size === "md" ? "bg-[#24262e]" : "bg-[#0f1115]",
+          size === "md" && "px-4",
+          floated && "pt-[1.05rem] pb-1",
           open
-            ? size === "md"
-              ? "bg-[#2a2d36] shadow-[0_0_0_3px_rgba(0,102,255,0.18)]"
-              : "bg-[#12141a] shadow-[0_0_0_3px_rgba(0,102,255,0.22)]"
-            : size === "md"
-              ? "hover:bg-[#2a2d36] focus-visible:shadow-[0_0_0_3px_rgba(0,102,255,0.18)]"
-              : "hover:bg-[#12141a] focus-visible:shadow-[0_0_0_3px_rgba(0,102,255,0.22)]",
+            ? "border-[#0066ff]"
+            : "hover:border-white/10 focus-visible:border-[#0066ff]",
         )}
       >
         <span
           className={cn(
-            "min-w-0 truncate font-[family-name:var(--font-manrope)] text-white",
-            size === "lg" ? "text-[16px] md:text-[17px]" : "text-[15px]",
+            "pointer-events-none absolute font-[family-name:var(--font-manrope)] text-white/35 transition-all duration-200 ease-out",
+            size === "lg" ? "left-4 md:left-5" : "left-4",
+            floated
+              ? "top-[0.45rem] text-[11px] md:text-[12px]"
+              : cn(
+                  "top-1/2 -translate-y-1/2",
+                  size === "lg" ? "text-[16px] md:text-[17px]" : "text-[15px]",
+                ),
           )}
         >
-          {value}
+          {label}
+        </span>
+        <span
+          className={cn(
+            "min-w-0 truncate font-[family-name:var(--font-manrope)] text-white",
+            size === "lg" ? "text-[16px] md:text-[17px]" : "text-[15px]",
+            !value && "opacity-0",
+          )}
+        >
+          {value || "\u00a0"}
         </span>
         <ChevronDown
           size={16}

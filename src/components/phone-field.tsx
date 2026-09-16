@@ -2,6 +2,7 @@
 
 import { formatRuPhone, phoneDigits } from "@/lib/profile";
 import { cn } from "@/lib/utils";
+import { useId, useState } from "react";
 
 function RuFlag({ className }: { className?: string }) {
   return (
@@ -21,16 +22,10 @@ function RuFlag({ className }: { className?: string }) {
   );
 }
 
-const shellClass =
-  "w-full h-[54px] md:h-[56px] rounded-[12px] bg-[#0f1115] flex items-center gap-3 px-3 md:px-4 text-white outline-none transition-[box-shadow,background-color] focus-within:bg-[#12141a] focus-within:shadow-[0_0_0_3px_rgba(0,102,255,0.22)]";
-
-const shellClassMd =
-  "w-full h-12 rounded-[14px] bg-[#24262e] flex items-center gap-3 px-3 text-white outline-none transition-[box-shadow,background-color] focus-within:bg-[#2a2d36] focus-within:shadow-[0_0_0_3px_rgba(0,102,255,0.18)]";
-
 export function PhoneField({
   value,
   onChange,
-  label,
+  label = "Телефон",
   className,
   size = "lg",
 }: {
@@ -40,8 +35,15 @@ export function PhoneField({
   className?: string;
   size?: "lg" | "md";
 }) {
-  const applyDigits = (digits: string) => {
-    const d = phoneDigits(digits);
+  const id = useId();
+  const [focused, setFocused] = useState(false);
+  const digits = phoneDigits(value || "+7");
+  const hasNumber = digits.length > 1;
+  const floated = focused || hasNumber;
+  const display = value || "+7";
+
+  const applyDigits = (nextDigits: string) => {
+    const d = phoneDigits(nextDigits);
     if (d.length <= 1) {
       onChange("+7");
       return;
@@ -49,70 +51,94 @@ export function PhoneField({
     onChange(formatRuPhone(d));
   };
 
-  const display = value || "+7";
-
   return (
-    <label className={cn("block", className)}>
-      {label ? (
-        <span className="text-[13px] text-white/45 font-[family-name:var(--font-manrope)]">
-          {label}
-        </span>
+    <label
+      htmlFor={id}
+      className={cn(
+        "relative flex w-full items-center gap-2.5 bg-transparent border border-white/20 text-white outline-none transition-[border-color,padding] cursor-text",
+        "focus-within:border-[#0066ff]",
+        size === "lg"
+          ? "h-[56px] md:h-[58px] rounded-[16px] px-3 md:px-4"
+          : "h-14 rounded-[16px] px-3",
+        floated ? "pt-[1.05rem] pb-1" : "",
+        className,
+      )}
+    >
+      <span
+        className={cn(
+          "pointer-events-none absolute font-[family-name:var(--font-manrope)] text-white/35 transition-all duration-200 ease-out",
+          size === "lg" ? "left-3 md:left-4" : "left-3",
+          floated
+            ? "top-[0.45rem] text-[11px] md:text-[12px]"
+            : cn(
+                "top-1/2 -translate-y-1/2",
+                size === "lg" ? "text-[16px] md:text-[17px]" : "text-[15px]",
+              ),
+        )}
+      >
+        {label}
+      </span>
+
+      {floated ? (
+        <>
+          <RuFlag className="mt-0.5" />
+          <span className="text-white/40 text-[13px] md:text-[14px] font-medium font-[family-name:var(--font-manrope)] select-none tracking-wide mt-0.5">
+            RU
+          </span>
+          <span className="h-5 w-px bg-white/15 shrink-0 mt-0.5" />
+        </>
       ) : null}
-      <div className={cn(size === "md" ? shellClassMd : shellClass, label && "mt-2")}>
-        <RuFlag />
-        <span className="text-white/40 text-[13px] md:text-[14px] font-medium font-[family-name:var(--font-manrope)] select-none tracking-wide">
-          RU
-        </span>
-        <span className="h-5 w-px bg-white/15 shrink-0" />
-        <input
-          inputMode="tel"
-          autoComplete="tel"
-          value={display}
-          placeholder="+7 (___) ___-__-__"
-          onChange={(e) => {
-            const next = e.target.value;
-            const prevDigits = phoneDigits(value || "+7");
-            const nextDigits = phoneDigits(next);
-            if (
-              next.length < display.length &&
-              nextDigits.length >= prevDigits.length
-            ) {
-              applyDigits(
-                prevDigits.slice(0, Math.max(1, prevDigits.length - 1)),
-              );
-              return;
-            }
-            applyDigits(nextDigits.length ? nextDigits : "7");
-          }}
-          onKeyDown={(e) => {
-            if (e.key !== "Backspace") return;
-            const input = e.currentTarget;
-            const start = input.selectionStart ?? 0;
-            const end = input.selectionEnd ?? 0;
-            if (start !== end) return;
-            if (start <= 2) {
-              e.preventDefault();
-              return;
-            }
-            const before = display.slice(0, start);
-            if (/\d/.test(before.slice(-1))) return;
+
+      <input
+        id={id}
+        inputMode="tel"
+        autoComplete="tel"
+        value={floated ? display : ""}
+        onChange={(e) => {
+          const next = e.target.value;
+          const prevDigits = phoneDigits(value || "+7");
+          const nextDigits = phoneDigits(next);
+          if (
+            next.length < display.length &&
+            nextDigits.length >= prevDigits.length
+          ) {
+            applyDigits(
+              prevDigits.slice(0, Math.max(1, prevDigits.length - 1)),
+            );
+            return;
+          }
+          applyDigits(nextDigits.length ? nextDigits : "7");
+        }}
+        onKeyDown={(e) => {
+          if (e.key !== "Backspace") return;
+          const input = e.currentTarget;
+          const start = input.selectionStart ?? 0;
+          const end = input.selectionEnd ?? 0;
+          if (start !== end) return;
+          if (start <= 2) {
             e.preventDefault();
-            const digits = phoneDigits(value || "+7");
-            applyDigits(digits.slice(0, Math.max(1, digits.length - 1)));
-          }}
-          onFocus={(e) => {
-            if (phoneDigits(value || "+7").length <= 1) onChange("+7");
-            requestAnimationFrame(() => {
-              const el = e.target;
-              el.setSelectionRange(el.value.length, el.value.length);
-            });
-          }}
-          className={cn(
-            "flex-1 min-w-0 bg-transparent outline-none text-white font-[family-name:var(--font-manrope)] placeholder:text-white/30 tracking-wide",
-            size === "md" ? "text-[15px]" : "text-[16px] md:text-[17px]",
-          )}
-        />
-      </div>
+            return;
+          }
+          const before = display.slice(0, start);
+          if (/\d/.test(before.slice(-1))) return;
+          e.preventDefault();
+          applyDigits(digits.slice(0, Math.max(1, digits.length - 1)));
+        }}
+        onFocus={(e) => {
+          setFocused(true);
+          if (digits.length <= 1) onChange("+7");
+          requestAnimationFrame(() => {
+            const el = e.target;
+            el.setSelectionRange(el.value.length, el.value.length);
+          });
+        }}
+        onBlur={() => setFocused(false)}
+        className={cn(
+          "flex-1 min-w-0 bg-transparent outline-none text-white font-[family-name:var(--font-manrope)] tracking-wide",
+          size === "md" ? "text-[15px]" : "text-[16px] md:text-[17px]",
+          !floated && "opacity-0",
+        )}
+      />
     </label>
   );
 }

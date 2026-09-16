@@ -8,6 +8,7 @@ import {
 import { DateField } from "@/components/date-field";
 import { PhoneField } from "@/components/phone-field";
 import { SelectField } from "@/components/select-field";
+import { TextField } from "@/components/text-field";
 import { ArrowRight, Check } from "@/lib/icons";
 import { TIMEZONES, phoneDigits, suggestLogins } from "@/lib/profile";
 import {
@@ -20,9 +21,6 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-
-const inputClass =
-  "h-[54px] md:h-[56px] w-full rounded-[12px] bg-[#0f1115] px-4 md:px-5 text-[16px] md:text-[17px] font-[family-name:var(--font-manrope)] text-white placeholder:text-white/35 outline-none transition-[box-shadow,background-color] focus:bg-[#12141a] focus:shadow-[0_0_0_3px_rgba(0,102,255,0.22)]";
 
 const primaryBtn =
   "mt-1 h-[54px] md:h-[56px] w-full rounded-[12px] bg-[#0066ff] text-white font-[family-name:var(--font-manrope)] font-semibold text-[17px] inline-flex items-center justify-center gap-2 hover:bg-[#0052cc] transition-colors disabled:opacity-40 disabled:pointer-events-none";
@@ -348,18 +346,16 @@ function RegisterInner() {
                   setStep("login");
                 }}
               >
-                <input
+                <TextField
+                  label="Имя"
                   value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="Имя"
-                  className={inputClass}
+                  onChange={setFirstName}
                   autoFocus
                 />
-                <input
+                <TextField
+                  label="Фамилия"
                   value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Фамилия"
-                  className={inputClass}
+                  onChange={setLastName}
                 />
                 <button
                   type="submit"
@@ -382,32 +378,32 @@ function RegisterInner() {
                 className="flex flex-col gap-3"
               >
                 <div className="relative">
-                  <input
+                  <TextField
+                    label="Логин"
                     value={login}
-                    onChange={(e) => {
+                    onChange={(v) => {
                       setLoginError("");
                       setLogin(
-                        e.target.value
+                        v
                           .toLowerCase()
                           .replace(/[^a-z0-9._-]/g, "")
                           .slice(0, 32),
                       );
                     }}
-                    placeholder="логин"
-                    className={cn(
-                      inputClass,
-                      loginStatus === "taken" &&
-                        " focus:shadow-[0_0_0_3px_rgba(248,113,113,0.18)]",
-                      loginStatus === "free" &&
-                        " focus:shadow-[0_0_0_3px_rgba(52,211,153,0.16)]",
-                    )}
                     autoFocus
                     spellCheck={false}
+                    inputClassName={cn(
+                      login.trim().length >= 3 && "pr-24",
+                      loginStatus === "taken" &&
+                        "border-red-400 focus:border-red-400",
+                      loginStatus === "free" &&
+                        "border-emerald-400 focus:border-emerald-400",
+                    )}
                   />
                   {login.trim().length >= 3 && (
                     <span
                       className={cn(
-                        "absolute right-3.5 top-1/2 -translate-y-1/2 text-[12px] font-[family-name:var(--font-manrope)]",
+                        "absolute right-3.5 top-1/2 -translate-y-1/2 text-[12px] font-[family-name:var(--font-manrope)] z-10",
                         loginStatus === "checking" && "text-white/35",
                         loginStatus === "free" && "text-emerald-400",
                         loginStatus === "taken" && "text-red-400",
@@ -425,23 +421,22 @@ function RegisterInner() {
                   </p>
                 )}
                 <div className="relative">
-                  <input
+                  <TextField
+                    label="Почта"
                     value={emailLocal}
-                    onChange={(e) => {
+                    onChange={(v) => {
                       setEmailError("");
-                      setEmailLocal(sanitizeEmailLocal(e.target.value));
+                      setEmailLocal(sanitizeEmailLocal(v));
                     }}
-                    placeholder="почта"
-                    className={cn(
-                      inputClass,
-                      "pr-[128px]",
-                      emailStatus === "taken" &&
-                        " focus:shadow-[0_0_0_3px_rgba(248,113,113,0.18)]",
-                      emailStatus === "free" &&
-                        " focus:shadow-[0_0_0_3px_rgba(52,211,153,0.16)]",
-                    )}
                     autoComplete="off"
                     spellCheck={false}
+                    inputClassName={cn(
+                      "pr-[128px]",
+                      emailStatus === "taken" &&
+                        "border-red-400 focus:border-red-400",
+                      emailStatus === "free" &&
+                        "border-emerald-400 focus:border-emerald-400",
+                    )}
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[15px] md:text-[16px] text-white/40 font-[family-name:var(--font-manrope)] pointer-events-none">
                     @{MAIL_DOMAIN}
@@ -553,11 +548,10 @@ function RegisterInner() {
                   setStep("password");
                 }}
               >
-                <input
+                <TextField
+                  label="Как к вам обращаться?"
                   value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Как к вам обращаться?"
-                  className={inputClass}
+                  onChange={setDisplayName}
                   autoFocus
                 />
                 <div className="grid grid-cols-2 gap-2">
@@ -582,9 +576,14 @@ function RegisterInner() {
                     </button>
                   ))}
                 </div>
-                <DateField value={birthDate} onChange={setBirthDate} />
+                <DateField
+                  label="Дата рождения"
+                  value={birthDate}
+                  onChange={setBirthDate}
+                />
                 <PhoneField value={phone} onChange={setPhone} />
                 <SelectField
+                  label="Часовой пояс"
                   value={timezone}
                   options={TIMEZONES}
                   onChange={setTimezone}
@@ -632,22 +631,20 @@ function RegisterInner() {
                     {displayName ? ` · ${displayName}` : ""}
                   </p>
                 </div>
-                <input
+                <TextField
                   type="password"
+                  label="Пароль (от 8 символов)"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Пароль (от 8 символов)"
-                  className={inputClass}
+                  onChange={setPassword}
                   autoFocus
                   autoComplete="new-password"
                 />
                 <PasswordStrengthBar password={password} />
-                <input
+                <TextField
                   type="password"
+                  label="Повторите пароль"
                   value={password2}
-                  onChange={(e) => setPassword2(e.target.value)}
-                  placeholder="Повторите пароль"
-                  className={inputClass}
+                  onChange={setPassword2}
                   autoComplete="new-password"
                 />
                 {password2.length > 0 && password !== password2 && (

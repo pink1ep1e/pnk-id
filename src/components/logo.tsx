@@ -25,7 +25,7 @@ export function Logo({
       ? "/logo-blue-bg.svg"
       : variant === "text"
         ? "/logo-blue-text.svg"
-        : "/logo-id.svg";
+        : "/logo-id-new.svg";
 
   const defaultSize =
     variant === "id"
@@ -57,7 +57,11 @@ export function Logo({
   if (!href) return image;
 
   return (
-    <Link href={href} className="inline-flex shrink-0 items-center" aria-label={alt}>
+    <Link
+      href={href}
+      className="inline-flex shrink-0 items-center"
+      aria-label={alt}
+    >
       {image}
     </Link>
   );

@@ -5,16 +5,47 @@
   --foreground: #ffffff;
 }
 
+html {
+  scrollbar-width: none;
+  color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
+
+button,
+[role="button"],
+a {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 ::-webkit-scrollbar {
   display: none;
 }
 
-html {
-  scrollbar-width: none;
-  color-scheme: dark;
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #1a1c22 0%,
+    #24262e 45%,
+    #1a1c22 90%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.05s ease-in-out infinite;
 }

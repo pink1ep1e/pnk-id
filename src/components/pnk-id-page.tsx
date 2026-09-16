@@ -1,11 +1,14 @@
 ﻿"use client";
 
 import { Logo } from "@/components/logo";
+import { BottomSheet } from "@/components/bottom-sheet";
 import { DateField } from "@/components/date-field";
 import { PhoneField } from "@/components/phone-field";
 import { SelectField } from "@/components/select-field";
+import { TextField } from "@/components/text-field";
 import { QrScanner, extractQrCode } from "@/components/qr-scanner";
 import { cn } from "@/lib/utils";
+import { haptic } from "@/lib/haptic";
 import { TIMEZONES, formatRuPhone, phoneDigits } from "@/lib/profile";
 import {
   getPasswordStrength,
@@ -23,7 +26,6 @@ import {
   Lock,
   LogOut,
   Mail,
-  Menu,
   Paperclip,
   Pencil,
   Phone,
@@ -39,6 +41,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  startTransition,
   useCallback,
   useEffect,
   useMemo,
@@ -129,9 +132,6 @@ const navItems: { id: NavId; label: string; icon: typeof User }[] = [
   { id: "support", label: "Поддержка", icon: Support },
 ];
 
-const fieldClass =
-  "w-full h-12 rounded-[14px] bg-[#24262e] px-4 text-[15px] text-white outline-none transition-[box-shadow,background-color] focus:bg-[#2a2d36] focus:shadow-[0_0_0_3px_rgba(0,102,255,0.18)] font-[family-name:var(--font-manrope)] placeholder:text-white/30";
-
 function avatarLetter(p: Profile | null): string {
   const src = (p?.displayName || p?.firstName || p?.login || "?").trim();
   return (src[0] || "?").toUpperCase();
@@ -182,20 +182,25 @@ function Row({
     <div
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
+      onPointerDown={() => {
+        if (onClick) haptic("selection");
+      }}
       onClick={onClick}
       onKeyDown={
         onClick
           ? (e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
+                haptic("selection");
                 onClick();
               }
             }
           : undefined
       }
       className={cn(
-        "w-full flex items-center gap-3.5 min-h-[64px] px-4 py-3 text-left transition-colors",
-        onClick && "cursor-pointer hover:bg-white/[0.03]",
+        "w-full flex items-center gap-3.5 min-h-[64px] px-4 py-3 text-left transition-colors duration-100",
+        onClick &&
+          "cursor-pointer hover:bg-white/[0.03] active:bg-white/[0.05] active:scale-[0.995]",
       )}
     >
       <span className="h-10 w-10 rounded-[12px] bg-[#24262e] flex items-center justify-center shrink-0 text-white/65">
@@ -230,13 +235,15 @@ function Section({
   title,
   subtitle,
   children,
+  className,
 }: {
   title: string;
   subtitle?: string;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <section className="pt-9">
+    <section className={cn("pt-7 first:pt-1", className)}>
       <h2 className="text-[18px] md:text-[20px] font-semibold font-[family-name:var(--font-unbounded)] tracking-[-0.02em]">
         {title}
       </h2>
@@ -262,18 +269,22 @@ function Toggle({
       type="button"
       role="switch"
       aria-checked={checked}
+      onPointerDown={(e) => {
+        e.stopPropagation();
+        haptic("selection");
+      }}
       onClick={(e) => {
         e.stopPropagation();
         onChange(!checked);
       }}
       className={cn(
-        "relative h-7 w-12 rounded-full transition-colors shrink-0",
+        "relative h-7 w-12 rounded-full transition-colors duration-150 shrink-0 active:scale-95",
         checked ? "bg-[#0066ff]" : "bg-[#3a3e48]",
       )}
     >
       <span
         className={cn(
-          "absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform",
+          "absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform duration-150",
           checked ? "left-[22px]" : "left-0.5",
         )}
       />
@@ -322,8 +333,9 @@ function DetailShell({
     <div className="pb-16">
       <button
         type="button"
+        onPointerDown={() => haptic("light")}
         onClick={onBack}
-        className="inline-flex items-center gap-2 text-[14px] text-white/45 hover:text-white font-[family-name:var(--font-manrope)] transition-colors mb-5"
+        className="inline-flex items-center gap-2 text-[14px] text-white/45 hover:text-white font-[family-name:var(--font-manrope)] transition-colors duration-100 mb-5 active:opacity-70"
       >
         <ArrowRight size={16} className="rotate-180" />
         Назад
@@ -350,10 +362,13 @@ function PrimaryBtn({
   return (
     <button
       type="button"
+      onPointerDown={() => {
+        if (!disabled) haptic("medium");
+      }}
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "w-full h-12 rounded-full text-[15px] font-semibold font-[family-name:var(--font-manrope)] transition-colors disabled:opacity-40 disabled:pointer-events-none",
+        "w-full h-12 rounded-full text-[15px] font-semibold font-[family-name:var(--font-manrope)] transition-[transform,opacity,background-color] duration-100 disabled:opacity-40 disabled:pointer-events-none active:scale-[0.98]",
         variant === "blue" && "bg-[#0066ff] hover:bg-[#0052cc] text-white",
         variant === "dark" && "bg-[#1c1e24] hover:bg-[#22252c] text-white",
         variant === "ghost" &&
@@ -699,19 +714,15 @@ function EditProfileModal({
   }, [open, profile]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !cropSrc) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      if (cropSrc) {
-        URL.revokeObjectURL(cropSrc);
-        setCropSrc(null);
-      } else onClose();
+      URL.revokeObjectURL(cropSrc);
+      setCropSrc(null);
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose, cropSrc]);
-
-  if (!open) return null;
+  }, [open, cropSrc]);
 
   const pickFile = (file?: File | null) => {
     if (!file || !file.type.startsWith("image/")) return;
@@ -756,22 +767,24 @@ function EditProfileModal({
     avatarUrl,
   });
 
+  const requestClose = () => {
+    if (cropSrc) {
+      URL.revokeObjectURL(cropSrc);
+      setCropSrc(null);
+      return;
+    }
+    onClose();
+  };
+
   return (
     <>
-      <div
-        className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4 bg-black/65 backdrop-blur-sm"
-        onMouseDown={(e) => {
-          if (e.target === e.currentTarget && !cropSrc) onClose();
-        }}
+      <BottomSheet
+        open={open}
+        onClose={requestClose}
+        labelledBy="id-edit-title"
+        dismissible={!cropSrc}
       >
-        <div
-          role="dialog"
-          aria-modal
-          aria-labelledby="id-edit-title"
-          className="w-full sm:max-w-[520px] max-h-[92vh] overflow-y-auto rounded-t-[28px] sm:rounded-[28px] bg-[#1a1c22] shadow-[0_24px_80px_rgba(0,0,0,0.55)] p-5 md:p-7"
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          <div className="flex items-start justify-between gap-3 mb-6">
+          <div className="flex items-start justify-between gap-3 mb-5">
             <h2
               id="id-edit-title"
               className="text-[22px] font-semibold font-[family-name:var(--font-unbounded)] tracking-[-0.02em]"
@@ -780,19 +793,19 @@ function EditProfileModal({
             </h2>
             <button
               type="button"
-              onClick={onClose}
-              className="h-9 w-9 rounded-full flex items-center justify-center text-white/40 hover:bg-white/[0.06] hover:text-white transition-colors"
+              onClick={requestClose}
+              className="hidden sm:flex h-9 w-9 rounded-full items-center justify-center text-white/40 hover:bg-white/[0.06] hover:text-white transition-colors"
               aria-label="Закрыть"
             >
               <X size={18} />
             </button>
           </div>
 
-          <div className="flex flex-col items-center mb-6">
-            <div className="relative">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="relative shrink-0">
               <div
                 className={cn(
-                  "h-24 w-24 rounded-[22px] overflow-hidden flex items-center justify-center text-white text-[36px] font-semibold font-[family-name:var(--font-manrope)]",
+                  "h-[72px] w-[72px] rounded-[18px] overflow-hidden flex items-center justify-center text-white text-[28px] font-semibold font-[family-name:var(--font-manrope)]",
                   !avatarUrl && "bg-[#0066ff]",
                 )}
               >
@@ -810,10 +823,10 @@ function EditProfileModal({
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="absolute -bottom-1 -right-1 h-9 w-9 rounded-full bg-[#0c0d10] flex items-center justify-center text-white/80 hover:bg-[#16181e] transition-colors"
+                className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full bg-[#0c0d10] flex items-center justify-center text-white/80 hover:bg-[#16181e] transition-colors"
                 aria-label="Сменить аватар"
               >
-                <Camera size={15} />
+                <Camera size={14} />
               </button>
               <input
                 ref={fileRef}
@@ -826,100 +839,85 @@ function EditProfileModal({
                 }}
               />
             </div>
-            <div className="mt-3 flex gap-3">
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="text-[13px] text-[#4d9fff] font-[family-name:var(--font-manrope)] hover:underline"
-              >
-                Загрузить фото
-              </button>
-              {avatarUrl && (
+            <div className="min-w-0 flex-1 space-y-2">
+              <TextField
+                size="md"
+                label="Как к вам обращаться?"
+                value={displayName}
+                onChange={setDisplayName}
+              />
+              <div className="flex gap-3 px-0.5">
                 <button
                   type="button"
-                  onClick={() => setAvatarUrl(null)}
-                  className="text-[13px] text-white/40 font-[family-name:var(--font-manrope)] hover:text-white/70"
+                  onClick={() => fileRef.current?.click()}
+                  className="text-[13px] text-[#4d9fff] font-[family-name:var(--font-manrope)] hover:underline"
                 >
-                  Убрать
+                  Загрузить фото
                 </button>
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-[18px] bg-[#0f1115] p-4 mb-3">
-            <label className="block">
-              <span className="text-[13px] text-white/45 font-[family-name:var(--font-manrope)]">
-                Как к вам обращаться?
-              </span>
-              <input
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className={cn(fieldClass, "mt-2")}
-              />
-            </label>
-          </div>
-
-          <div className="rounded-[18px] bg-[#0f1115] p-4 mb-3 space-y-4">
-            <p className="text-[15px] font-semibold font-[family-name:var(--font-manrope)]">
-              Персональные данные
-            </p>
-            <div>
-              <p className="text-[13px] text-white/45 font-[family-name:var(--font-manrope)] mb-2">
-                Имя и фамилия
-              </p>
-              <div className="grid grid-cols-1 gap-2">
-                <input
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="Имя"
-                  className={fieldClass}
-                />
-                <input
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Фамилия"
-                  className={fieldClass}
-                />
+                {avatarUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setAvatarUrl(null)}
+                    className="text-[13px] text-white/40 font-[family-name:var(--font-manrope)] hover:text-white/70"
+                  >
+                    Убрать
+                  </button>
+                )}
               </div>
             </div>
+          </div>
+
+          <div className="space-y-3 mb-6">
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-[13px] text-white/45 font-[family-name:var(--font-manrope)] mb-2">
-                  Пол
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  {(
-                    [
-                      { id: "m" as const, label: "М" },
-                      { id: "f" as const, label: "Ж" },
-                    ] as const
-                  ).map((g) => (
-                    <button
-                      key={g.id}
-                      type="button"
-                      onClick={() => setGender(g.id)}
-                      className={cn(
-                        "h-12 rounded-[14px] text-[15px] font-semibold font-[family-name:var(--font-manrope)] transition-colors",
-                        gender === g.id
-                          ? "bg-[#0066ff] text-white"
-                          : "bg-[#24262e] text-white/50 hover:bg-[#2a2d36]",
-                      )}
-                    >
-                      {g.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <DateField
-                label="Дата рождения"
-                value={birthDate}
-                onChange={setBirthDate}
+              <TextField
                 size="md"
+                label="Имя"
+                value={firstName}
+                onChange={setFirstName}
+              />
+              <TextField
+                size="md"
+                label="Фамилия"
+                value={lastName}
+                onChange={setLastName}
               />
             </div>
-          </div>
 
-          <div className="rounded-[18px] bg-[#0f1115] p-4 mb-6">
+            <div
+              role="group"
+              aria-label="Пол"
+              className="grid grid-cols-2 gap-3"
+            >
+              {(
+                [
+                  { id: "m" as const, label: "Мужской" },
+                  { id: "f" as const, label: "Женский" },
+                ] as const
+              ).map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                onClick={() => setGender(g.id)}
+                onPointerDown={() => haptic("selection")}
+                className={cn(
+                  "h-14 rounded-[16px] cursor-pointer text-[15px] font-semibold font-[family-name:var(--font-manrope)] transition-[transform,colors] duration-100 border active:scale-[0.98]",
+                    gender === g.id
+                      ? "bg-[#0066ff] border-[#0066ff] text-white"
+                      : "bg-transparent border-white/20 text-white/50 hover:border-white/35 hover:text-white/70",
+                  )}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
+
+            <DateField
+              label="Дата рождения"
+              value={birthDate}
+              onChange={setBirthDate}
+              size="md"
+            />
+
             <SelectField
               label="Часовой пояс"
               value={timezone}
@@ -935,16 +933,18 @@ function EditProfileModal({
             </p>
           )}
 
-          <button
-            type="button"
-            disabled={saving}
-            onClick={() => void save()}
-            className="w-full h-12 rounded-full bg-[#0066ff] hover:bg-[#0052cc] transition-colors text-[15px] font-semibold font-[family-name:var(--font-manrope)] disabled:opacity-50"
-          >
-            {saving ? "Сохранение…" : "Сохранить"}
-          </button>
-        </div>
-      </div>
+        <button
+          type="button"
+          disabled={saving}
+          onPointerDown={() => {
+            if (!saving) haptic("medium");
+          }}
+          onClick={() => void save()}
+          className="w-full h-12 rounded-full bg-[#0066ff] hover:bg-[#0052cc] transition-[transform,background-color] duration-100 text-[15px] font-semibold font-[family-name:var(--font-manrope)] disabled:opacity-50 active:scale-[0.98]"
+        >
+          {saving ? "Сохранение…" : "Сохранить"}
+        </button>
+      </BottomSheet>
 
       {cropSrc && (
         <AvatarCropper
@@ -1504,43 +1504,30 @@ function PanelView({
       {panel === "password" && (
         <div className="space-y-4">
           <div className="rounded-[18px] bg-[#1a1c22] p-4 space-y-3">
-            <label className="block">
-              <span className="text-[13px] text-white/45 font-[family-name:var(--font-manrope)]">
-                Текущий пароль
-              </span>
-              <input
+            <TextField
+              size="md"
+              type={showPass ? "text" : "password"}
+              label="Текущий пароль"
+              value={currentPass}
+              onChange={setCurrentPass}
+            />
+            <div>
+              <TextField
+                size="md"
                 type={showPass ? "text" : "password"}
-                value={currentPass}
-                onChange={(e) => setCurrentPass(e.target.value)}
-                placeholder="Введите текущий пароль"
-                className={cn(fieldClass, "mt-2")}
-              />
-            </label>
-            <label className="block">
-              <span className="text-[13px] text-white/45 font-[family-name:var(--font-manrope)]">
-                Новый пароль
-              </span>
-              <input
-                type={showPass ? "text" : "password"}
+                label="Новый пароль"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Не меньше 8 символов"
-                className={cn(fieldClass, "mt-2")}
+                onChange={setPassword}
               />
               <PasswordStrengthBar password={password} />
-            </label>
-            <label className="block">
-              <span className="text-[13px] text-white/45 font-[family-name:var(--font-manrope)]">
-                Повторите пароль
-              </span>
-              <input
-                type={showPass ? "text" : "password"}
-                value={password2}
-                onChange={(e) => setPassword2(e.target.value)}
-                placeholder="Ещё раз"
-                className={cn(fieldClass, "mt-2")}
-              />
-            </label>
+            </div>
+            <TextField
+              size="md"
+              type={showPass ? "text" : "password"}
+              label="Повторите пароль"
+              value={password2}
+              onChange={setPassword2}
+            />
             {password2 && password !== password2 && (
               <p className="text-[12px] text-red-400 font-[family-name:var(--font-manrope)]">
                 Пароли не совпадают
@@ -1610,11 +1597,11 @@ function PanelView({
           </Card>
           {showRecoveryEmail && (
             <div className="rounded-[18px] bg-[#1a1c22] p-4 space-y-3">
-              <input
+              <TextField
+                size="md"
+                label="Резервная почта"
                 value={recoveryEmail}
-                onChange={(e) => setRecoveryEmail(e.target.value)}
-                placeholder="email@example.com"
-                className={fieldClass}
+                onChange={setRecoveryEmail}
               />
               <PrimaryBtn
                 disabled={!recoveryEmail.includes("@") || busy}
@@ -1789,16 +1776,12 @@ function PanelView({
       {panel === "sender" && (
         <div className="space-y-4">
           <div className="rounded-[18px] bg-[#1a1c22] p-4">
-            <label className="block">
-              <span className="text-[13px] text-white/45 font-[family-name:var(--font-manrope)]">
-                Отображаемое имя
-              </span>
-              <input
-                value={senderName}
-                onChange={(e) => setSenderName(e.target.value)}
-                className={cn(fieldClass, "mt-2")}
-              />
-            </label>
+            <TextField
+              size="md"
+              label="Отображаемое имя"
+              value={senderName}
+              onChange={setSenderName}
+            />
           </div>
           {error && (
             <p className="text-[13px] text-red-400 font-[family-name:var(--font-manrope)]">
@@ -1849,17 +1832,13 @@ function PanelView({
             отозваны.
           </InfoBanner>
           <div className="rounded-[18px] bg-[#1a1c22] p-4">
-            <label className="block">
-              <span className="text-[13px] text-white/45 font-[family-name:var(--font-manrope)]">
-                Пароль для подтверждения
-              </span>
-              <input
-                type="password"
-                value={deletePass}
-                onChange={(e) => setDeletePass(e.target.value)}
-                className={cn(fieldClass, "mt-2")}
-              />
-            </label>
+            <TextField
+              size="md"
+              type="password"
+              label="Пароль для подтверждения"
+              value={deletePass}
+              onChange={setDeletePass}
+            />
           </div>
           {error && (
             <p className="text-[13px] text-red-400 font-[family-name:var(--font-manrope)]">
@@ -1945,6 +1924,58 @@ function PanelView({
   );
 }
 
+function SkeletonBlock({ className }: { className?: string }) {
+  return <div className={cn("skeleton rounded-[14px]", className)} />;
+}
+
+function CabinetSkeleton() {
+  return (
+    <div aria-busy aria-label="Загрузка">
+      <SkeletonBlock className="h-7 w-36 mb-6 md:mb-8 rounded-[10px]" />
+      <div className="rounded-[22px] bg-[#1a1c22] p-4 md:p-5 flex items-center gap-4">
+        <SkeletonBlock className="h-14 w-14 md:h-16 md:w-16 rounded-[18px] shrink-0" />
+        <div className="min-w-0 flex-1 space-y-2.5">
+          <SkeletonBlock className="h-4 w-40 max-w-full" />
+          <SkeletonBlock className="h-3.5 w-52 max-w-full" />
+        </div>
+        <SkeletonBlock className="h-10 w-10 rounded-full shrink-0" />
+      </div>
+
+      <div className="pt-9">
+        <SkeletonBlock className="h-5 w-28 mb-2" />
+        <SkeletonBlock className="h-3.5 w-64 max-w-full mb-4" />
+        <div className="rounded-[18px] bg-[#1a1c22] overflow-hidden divide-y divide-white/[0.04]">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="flex items-center gap-3.5 min-h-[64px] px-4 py-3">
+              <SkeletonBlock className="h-10 w-10 rounded-[12px] shrink-0" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <SkeletonBlock className="h-3.5 w-36 max-w-[70%]" />
+                <SkeletonBlock className="h-3 w-24 max-w-[45%]" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="pt-9">
+        <SkeletonBlock className="h-5 w-44 mb-2" />
+        <SkeletonBlock className="h-3.5 w-56 max-w-full mb-4" />
+        <div className="rounded-[18px] bg-[#1a1c22] overflow-hidden divide-y divide-white/[0.04]">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="flex items-center gap-3.5 min-h-[64px] px-4 py-3">
+              <SkeletonBlock className="h-10 w-10 rounded-[12px] shrink-0" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <SkeletonBlock className="h-3.5 w-40 max-w-[75%]" />
+                <SkeletonBlock className="h-3 w-48 max-w-[80%]" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PnkIdPage({
   onUnauthorized,
 }: {
@@ -1958,7 +1989,6 @@ export default function PnkIdPage({
 
   const [nav, setNav] = useState<NavId>("data");
   const [editOpen, setEditOpen] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [panel, setPanel] = useState<PanelId | null>(null);
   const [qrLogin, setQrLogin] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -1967,33 +1997,41 @@ export default function PnkIdPage({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     void (async () => {
       try {
-        const me = await fetch("/api/auth/me");
-        const meJson = await me.json();
-        if (!meJson.ok) {
-          goLogin();
-          return;
-        }
-        const [pRes, sRes, aRes] = await Promise.all([
+        const [meRes, pRes, sRes, aRes] = await Promise.all([
+          fetch("/api/auth/me"),
           fetch("/api/profile"),
           fetch("/api/security/sessions"),
           fetch("/api/apps"),
         ]);
-        const [pJson, sJson, aJson] = await Promise.all([
+        const [meJson, pJson, sJson, aJson] = await Promise.all([
+          meRes.json(),
           pRes.json(),
           sRes.json(),
           aRes.json(),
         ]);
-        if (pJson.ok) setProfile(pJson.data);
+        if (cancelled) return;
+        if (!meJson.ok) {
+          goLogin();
+          return;
+        }
+        if (pJson.ok) {
+          setProfile(pJson.data);
+          setLoading(false);
+        }
         if (sJson.ok) setSessions(sJson.data);
         if (aJson.ok) setApps(aJson.data);
       } catch {
-        goLogin();
+        if (!cancelled) goLogin();
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [goLogin]);
 
   const title = useMemo(() => {
@@ -2001,17 +2039,24 @@ export default function PnkIdPage({
     return navItems.find((n) => n.id === nav)?.label ?? "pnk ID";
   }, [nav, panel]);
 
-  const openPanel = (id: PanelId) => setPanel(id);
-  const closePanel = () => setPanel(null);
+  const openPanel = (id: PanelId) => {
+    startTransition(() => setPanel(id));
+  };
+  const closePanel = () => {
+    startTransition(() => setPanel(null));
+  };
 
   const switchNav = (id: NavId) => {
-    setPanel(null);
-    setNav(id);
+    startTransition(() => {
+      setPanel(null);
+      setNav(id);
+    });
   };
 
   const logout = async () => {
     if (profile?.id) {
-      const { markAccountSignedOut } = await import("@/lib/remembered-accounts");
+      const { markAccountSignedOut } =
+        await import("@/lib/remembered-accounts");
       markAccountSignedOut(profile.id);
     }
     await fetch("/api/auth/logout", { method: "POST" });
@@ -2023,14 +2068,7 @@ export default function PnkIdPage({
     sessions.length <= 1
       ? "Только это устройство"
       : `Это устройство и ещё ${sessions.length - 1}`;
-
-  if (loading || !profile) {
-    return (
-      <div className="h-dvh bg-[#0c0d10] text-white/40 flex items-center justify-center font-[family-name:var(--font-manrope)]">
-        Загрузка…
-      </div>
-    );
-  }
+  const showSkeleton = loading || !profile;
 
   return (
     <div className="h-dvh bg-[#0c0d10] text-white flex overflow-hidden">
@@ -2047,9 +2085,10 @@ export default function PnkIdPage({
               <button
                 key={item.id}
                 type="button"
+                onPointerDown={() => haptic("selection")}
                 onClick={() => switchNav(item.id)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-[14px] text-[14px] font-[family-name:var(--font-manrope)] transition-colors",
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-[14px] text-[14px] font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-[0.98]",
                   active
                     ? "bg-[#1a1c22] text-white"
                     : "text-white/55 hover:bg-white/[0.04] hover:text-white/85",
@@ -2083,6 +2122,7 @@ export default function PnkIdPage({
           </p>
           <button
             type="button"
+            onPointerDown={() => haptic("medium")}
             onClick={() => void logout()}
             className="flex items-center gap-1.5 hover:text-white/50 transition-colors"
           >
@@ -2095,26 +2135,28 @@ export default function PnkIdPage({
 
       <div className="flex-1 min-w-0 min-h-0 flex flex-col">
         <header className="md:hidden sticky top-0 z-40 flex items-center justify-between gap-3 px-4 py-3 bg-[#0c0d10]/95 backdrop-blur shrink-0">
-          <button
-            type="button"
-            onClick={() => setMobileNavOpen(true)}
-            className="h-10 w-10 rounded-full flex items-center justify-center text-white/70 hover:bg-white/[0.05]"
-            aria-label="Меню"
-          >
-            <Menu size={20} />
-          </button>
+          <div className="w-14" aria-hidden />
           <Logo variant="id" href="/cabinet" className="w-[88px]" />
           <button
             type="button"
-            onClick={() => void logout()}
-            className="text-[13px] text-white/45 font-[family-name:var(--font-manrope)] hover:text-white/70"
+            onPointerDown={() => {
+              if (profile) haptic("medium");
+            }}
+            onClick={() => {
+              if (profile) void logout();
+            }}
+            className="text-[13px] text-white/45 font-[family-name:var(--font-manrope)] hover:text-white/70 w-14 text-right"
           >
             Выйти
           </button>
         </header>
 
         <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 md:px-10 lg:px-14 py-6 md:py-10">
-          <div className="max-w-[720px] pb-16">
+          <div className="max-w-[720px] pb-24 md:pb-16">
+            {showSkeleton ? (
+              <CabinetSkeleton />
+            ) : (
+              <>
             {!panel && (
               <>
                 <div className="hidden md:flex items-center justify-between mb-8">
@@ -2122,7 +2164,7 @@ export default function PnkIdPage({
                     {title}
                   </h1>
                 </div>
-                <h1 className="md:hidden text-[24px] font-semibold font-[family-name:var(--font-unbounded)] tracking-[-0.03em] mb-6">
+                <h1 className="md:hidden text-[24px] font-semibold font-[family-name:var(--font-unbounded)] tracking-[-0.03em] mb-3">
                   {title}
                 </h1>
               </>
@@ -2132,7 +2174,7 @@ export default function PnkIdPage({
               <PanelView
                 panel={panel}
                 onBack={closePanel}
-                profile={profile}
+                profile={profile!}
                 sessions={sessions}
                 apps={apps}
                 qrLogin={qrLogin}
@@ -2148,8 +2190,9 @@ export default function PnkIdPage({
                   <div>
                     <button
                       type="button"
+                      onPointerDown={() => haptic("light")}
                       onClick={() => setEditOpen(true)}
-                      className="w-full rounded-[22px] bg-[#1a1c22] p-4 md:p-5 flex items-center gap-4 text-left hover:bg-[#1e2028] transition-colors"
+                      className="w-full rounded-[22px] bg-[#1a1c22] p-4 md:p-5 flex items-center gap-4 text-left hover:bg-[#1e2028] transition-colors duration-100 active:scale-[0.99]"
                     >
                       <div
                         className={cn(
@@ -2329,80 +2372,49 @@ export default function PnkIdPage({
                 )}
               </>
             )}
+              </>
+            )}
           </div>
         </main>
+
+        <nav
+          className="md:hidden shrink-0 z-40 border-t border-white/[0.06] bg-[#12141a]/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
+          aria-label="Разделы"
+        >
+          <div className="grid grid-cols-3 h-[64px]">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = !panel && nav === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onPointerDown={() => haptic("selection")}
+                  onClick={() => switchNav(item.id)}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-1 font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-95",
+                    active ? "text-[#0066ff]" : "text-white/40",
+                  )}
+                >
+                  <Icon size={22} className={active ? "text-[#0066ff]" : "text-white/40"} />
+                  <span className="text-[11px] font-medium leading-none">
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
       </div>
 
-      {mobileNavOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/60"
-            aria-label="Закрыть меню"
-            onClick={() => setMobileNavOpen(false)}
-          />
-          <div className="absolute left-0 top-0 bottom-0 w-[280px] bg-[#12141a] p-4 flex flex-col">
-            <div className="flex items-center justify-between mb-5">
-              <Logo variant="id" href="/cabinet" className="w-[92px]" />
-              <button
-                type="button"
-                onClick={() => setMobileNavOpen(false)}
-                className="h-9 w-9 rounded-full flex items-center justify-center text-white/50 hover:bg-white/[0.06]"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <nav className="space-y-0.5">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const active = !panel && nav === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      switchNav(item.id);
-                      setMobileNavOpen(false);
-                    }}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-[14px] text-[14px] font-[family-name:var(--font-manrope)]",
-                      active
-                        ? "bg-[#1a1c22]"
-                        : "text-white/60 hover:bg-white/[0.04]",
-                    )}
-                  >
-                    <Icon size={18} />
-                    {item.label}
-                  </button>
-                );
-              })}
-            </nav>
-            <div className="mt-auto pt-4 space-y-2 text-[13px] text-white/40 font-[family-name:var(--font-manrope)]">
-              <Link href="/help" className="block hover:text-white/60">
-                Справка
-              </Link>
-              <Link href="/legal/terms" className="block hover:text-white/60">
-                Условия
-              </Link>
-              <button
-                type="button"
-                onClick={() => void logout()}
-                className="flex items-center gap-1.5 hover:text-white/60"
-              >
-                <LogOut size={14} />
-                Выйти
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <EditProfileModal
-        open={editOpen}
-        onClose={() => setEditOpen(false)}
-        profile={profile}
-        onSaved={setProfile}
-      />
+      {profile ? (
+        <EditProfileModal
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          profile={profile}
+          onSaved={setProfile}
+        />
+      ) : null}
     </div>
   );
 }

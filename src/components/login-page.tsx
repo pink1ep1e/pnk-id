@@ -23,12 +23,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import QRCode from "qrcode";
+import { TextField } from "@/components/text-field";
 
 type LoginMethod = "password" | "qr";
 type View = "picker" | "methods";
-
-const inputClass =
-  "h-[54px] md:h-[56px] rounded-[12px] bg-[#0f1115] px-4 md:px-5 text-[16px] md:text-[17px] font-[family-name:var(--font-manrope)] text-white placeholder:text-white/35 outline-none transition-[box-shadow,background-color] focus:bg-[#12141a] focus:shadow-[0_0_0_3px_rgba(0,102,255,0.22)]";
 
 const primaryBtn =
   "mt-1 h-[54px] md:h-[56px] rounded-[12px] bg-[#0066ff] text-white font-[family-name:var(--font-manrope)] font-semibold text-[17px] inline-flex items-center justify-center gap-2 hover:bg-[#0052cc] transition-colors disabled:opacity-50";
@@ -598,21 +596,19 @@ function LoginInner() {
                           onSubmit={onSubmit}
                           autoComplete="off"
                         >
-                          <input
+                          <TextField
+                            label="Логин или почта"
                             value={login}
-                            onChange={(e) => setLogin(e.target.value)}
-                            placeholder="Логин или почта"
-                            className={inputClass}
+                            onChange={setLogin}
                             autoFocus
                             autoComplete="off"
                             name="pnk-id-login"
                           />
-                          <input
+                          <TextField
                             type="password"
+                            label="Пароль"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Пароль"
-                            className={inputClass}
+                            onChange={setPassword}
                             autoComplete="current-password"
                             name="pnk-id-password"
                           />
