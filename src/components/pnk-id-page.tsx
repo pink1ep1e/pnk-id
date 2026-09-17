@@ -8,7 +8,7 @@ import { SelectField } from "@/components/select-field";
 import { TextField } from "@/components/text-field";
 import { QrScanner, extractQrCode } from "@/components/qr-scanner";
 import { cn } from "@/lib/utils";
-import { haptic, primeHaptics } from "@/lib/haptic";
+import { haptic } from "@/lib/haptic";
 import { TIMEZONES, formatRuPhone, phoneDigits } from "@/lib/profile";
 import {
   getPasswordStrength,
@@ -183,9 +183,7 @@ function Row({
     <div
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
-      onPointerDown={() => {
-        if (onClick) haptic("selection");
-      }}
+      data-haptic={onClick ? "selection" : undefined}
       onClick={onClick}
       onKeyDown={
         onClick
@@ -199,7 +197,7 @@ function Row({
           : undefined
       }
       className={cn(
-        "w-full flex items-center gap-3.5 min-h-[64px] px-4 py-3 text-left transition-colors duration-100",
+        "relative w-full flex items-center gap-3.5 min-h-[64px] px-4 py-3 text-left transition-colors duration-100",
         onClick &&
           "cursor-pointer hover:bg-white/[0.03] active:bg-white/[0.05] active:scale-[0.995]",
       )}
@@ -270,10 +268,7 @@ function Toggle({
       type="button"
       role="switch"
       aria-checked={checked}
-      onPointerDown={(e) => {
-        e.stopPropagation();
-        haptic("selection");
-      }}
+      data-haptic="selection"
       onClick={(e) => {
         e.stopPropagation();
         onChange(!checked);
@@ -334,9 +329,9 @@ function DetailShell({
     <div className="pb-16">
       <button
         type="button"
-        onPointerDown={() => haptic("light")}
+        data-haptic="impact-light"
         onClick={onBack}
-        className="inline-flex items-center gap-2 text-[14px] text-white/45 hover:text-white font-[family-name:var(--font-manrope)] transition-colors duration-100 mb-5 active:opacity-70"
+        className="relative inline-flex items-center gap-2 text-[14px] text-white/45 hover:text-white font-[family-name:var(--font-manrope)] transition-colors duration-100 mb-5 active:opacity-70"
       >
         <ArrowRight size={16} className="rotate-180" />
         Назад
@@ -363,13 +358,11 @@ function PrimaryBtn({
   return (
     <button
       type="button"
-      onPointerDown={() => {
-        if (!disabled) haptic("medium");
-      }}
+      data-haptic={disabled ? undefined : "impact-medium"}
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "w-full h-12 rounded-full text-[15px] font-semibold font-[family-name:var(--font-manrope)] transition-[transform,opacity,background-color] duration-100 disabled:opacity-40 disabled:pointer-events-none active:scale-[0.98]",
+        "relative w-full h-12 rounded-full text-[15px] font-semibold font-[family-name:var(--font-manrope)] transition-[transform,opacity,background-color] duration-100 disabled:opacity-40 disabled:pointer-events-none active:scale-[0.98]",
         variant === "blue" && "bg-[#0066ff] hover:bg-[#0052cc] text-white",
         variant === "dark" && "bg-[#1c1e24] hover:bg-[#22252c] text-white",
         variant === "ghost" &&
@@ -898,10 +891,10 @@ function EditProfileModal({
                 <button
                   key={g.id}
                   type="button"
-                onClick={() => setGender(g.id)}
-                onPointerDown={() => haptic("selection")}
-                className={cn(
-                  "h-14 rounded-[16px] cursor-pointer text-[15px] font-semibold font-[family-name:var(--font-manrope)] transition-[transform,colors] duration-100 border active:scale-[0.98]",
+                  data-haptic="selection"
+                  onClick={() => setGender(g.id)}
+                  className={cn(
+                    "relative h-14 rounded-[16px] cursor-pointer text-[15px] font-semibold font-[family-name:var(--font-manrope)] transition-[transform,colors] duration-100 border active:scale-[0.98]",
                     gender === g.id
                       ? "bg-[#0066ff] border-[#0066ff] text-white"
                       : "bg-transparent border-white/20 text-white/50 hover:border-white/35 hover:text-white/70",
@@ -937,11 +930,9 @@ function EditProfileModal({
         <button
           type="button"
           disabled={saving}
-          onPointerDown={() => {
-            if (!saving) haptic("medium");
-          }}
+          data-haptic={saving ? undefined : "impact-medium"}
           onClick={() => void save()}
-          className="w-full h-12 rounded-full bg-[#0066ff] hover:bg-[#0052cc] transition-[transform,background-color] duration-100 text-[15px] font-semibold font-[family-name:var(--font-manrope)] disabled:opacity-50 active:scale-[0.98]"
+          className="relative w-full h-12 rounded-full bg-[#0066ff] hover:bg-[#0052cc] transition-[transform,background-color] duration-100 text-[15px] font-semibold font-[family-name:var(--font-manrope)] disabled:opacity-50 active:scale-[0.98]"
         >
           {saving ? "Сохранение…" : "Сохранить"}
         </button>
@@ -2000,16 +1991,6 @@ export default function PnkIdPage({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const prime = () => primeHaptics();
-    window.addEventListener("pointerdown", prime, { once: true, passive: true });
-    window.addEventListener("touchstart", prime, { once: true, passive: true });
-    return () => {
-      window.removeEventListener("pointerdown", prime);
-      window.removeEventListener("touchstart", prime);
-    };
-  }, []);
-
-  useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
@@ -2098,10 +2079,10 @@ export default function PnkIdPage({
               <button
                 key={item.id}
                 type="button"
-                onPointerDown={() => haptic("selection")}
+                data-haptic="selection"
                 onClick={() => switchNav(item.id)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-[14px] text-[14px] font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-[0.98]",
+                  "relative w-full flex items-center gap-3 px-3 py-2.5 rounded-[14px] text-[14px] font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-[0.98]",
                   active
                     ? "bg-[#1a1c22] text-white"
                     : "text-white/55 hover:bg-white/[0.04] hover:text-white/85",
@@ -2135,9 +2116,9 @@ export default function PnkIdPage({
           </p>
           <button
             type="button"
-            onPointerDown={() => haptic("medium")}
+            data-haptic="impact-medium"
             onClick={() => void logout()}
-            className="flex items-center gap-1.5 hover:text-white/50 transition-colors"
+            className="relative flex items-center gap-1.5 hover:text-white/50 transition-colors"
           >
             <LogOut size={12} />
             Выйти
@@ -2152,13 +2133,11 @@ export default function PnkIdPage({
           <Logo variant="id" href="/cabinet" className="w-[64px] max-h-7" />
           <button
             type="button"
-            onPointerDown={() => {
-              if (profile) haptic("medium");
-            }}
+            data-haptic={profile ? "impact-medium" : undefined}
             onClick={() => {
               if (profile) void logout();
             }}
-            className="text-[12px] text-white/45 font-[family-name:var(--font-manrope)] hover:text-white/70 w-12 text-right"
+            className="relative text-[12px] text-white/45 font-[family-name:var(--font-manrope)] hover:text-white/70 w-12 text-right"
           >
             Выйти
           </button>
@@ -2203,9 +2182,9 @@ export default function PnkIdPage({
                   <div>
                     <button
                       type="button"
-                      onPointerDown={() => haptic("light")}
+                      data-haptic="impact-light"
                       onClick={() => setEditOpen(true)}
-                      className="w-full rounded-[22px] bg-[#1a1c22] p-4 md:p-5 flex items-center gap-4 text-left hover:bg-[#1e2028] transition-colors duration-100 active:scale-[0.99]"
+                      className="relative w-full rounded-[22px] bg-[#1a1c22] p-4 md:p-5 flex items-center gap-4 text-left hover:bg-[#1e2028] transition-colors duration-100 active:scale-[0.99]"
                     >
                       <div
                         className={cn(
@@ -2406,13 +2385,13 @@ export default function PnkIdPage({
                 <Fragment key={item.id}>
                   <button
                     type="button"
-                    onPointerDown={() => haptic("selection")}
+                    data-haptic="selection"
                     onClick={() => {
                       setQrScanOpen(false);
                       switchNav(item.id);
                     }}
                     className={cn(
-                      "flex flex-col items-center justify-end gap-1 pb-1 font-[family-name:var(--font-manrope)] transition-[transform,colors] duration-75 active:scale-90 active:opacity-80",
+                      "relative flex flex-col items-center justify-end gap-1 pb-1 font-[family-name:var(--font-manrope)] transition-[transform,colors] duration-75 active:scale-90 active:opacity-80",
                       active ? "text-[#0066ff]" : "text-white/40",
                     )}
                   >
@@ -2427,13 +2406,13 @@ export default function PnkIdPage({
                   {insertQrAfter ? (
                     <button
                       type="button"
-                      onPointerDown={() => haptic("medium")}
+                      data-haptic="impact-medium"
                       onClick={() => {
                         setQrScanError("");
                         setQrScanOpen(true);
                       }}
                       className={cn(
-                        "flex flex-col items-center justify-end gap-1 pb-1 font-[family-name:var(--font-manrope)] transition-[transform,colors] duration-75 active:scale-90 active:opacity-80",
+                        "relative flex flex-col items-center justify-end gap-1 pb-1 font-[family-name:var(--font-manrope)] transition-[transform,colors] duration-75 active:scale-90 active:opacity-80",
                         qrScanOpen ? "text-[#0066ff]" : "text-white/40",
                       )}
                       aria-label="Сканер QR"

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Unbounded, Manrope } from "next/font/google";
+import { AppHapticsProvider } from "@/components/haptics-provider";
 import "./globals.css";
 
 const unbounded = Unbounded({
@@ -58,7 +59,7 @@ export default function RootLayout({
       <body
         className={`${unbounded.variable} ${manrope.variable} antialiased bg-[#0c0d10] text-white font-[family-name:var(--font-manrope)]`}
       >
-        {children}
+        <AppHapticsProvider>{children}</AppHapticsProvider>
       </body>
     </html>
   );
