@@ -41,6 +41,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Fragment,
   startTransition,
   useCallback,
   useEffect,
@@ -1989,6 +1990,8 @@ export default function PnkIdPage({
 
   const [nav, setNav] = useState<NavId>("data");
   const [editOpen, setEditOpen] = useState(false);
+  const [qrScanOpen, setQrScanOpen] = useState(false);
+  const [qrScanError, setQrScanError] = useState("");
   const [panel, setPanel] = useState<PanelId | null>(null);
   const [qrLogin, setQrLogin] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -2381,26 +2384,59 @@ export default function PnkIdPage({
           className="md:hidden shrink-0 z-40 border-t border-white/[0.06] bg-[#12141a]/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
           aria-label="Разделы"
         >
-          <div className="grid grid-cols-3 h-[64px]">
+          <div className="grid grid-cols-4 h-[64px]">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const active = !panel && nav === item.id;
+              const active = !panel && !qrScanOpen && nav === item.id;
+              const insertQrAfter = item.id === "security";
               return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onPointerDown={() => haptic("selection")}
-                  onClick={() => switchNav(item.id)}
-                  className={cn(
-                    "flex flex-col items-center justify-center gap-1 font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-95",
-                    active ? "text-[#0066ff]" : "text-white/40",
-                  )}
-                >
-                  <Icon size={22} className={active ? "text-[#0066ff]" : "text-white/40"} />
-                  <span className="text-[11px] font-medium leading-none">
-                    {item.label}
-                  </span>
-                </button>
+                <Fragment key={item.id}>
+                  <button
+                    type="button"
+                    onPointerDown={() => haptic("selection")}
+                    onClick={() => {
+                      setQrScanOpen(false);
+                      switchNav(item.id);
+                    }}
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-1 font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-95",
+                      active ? "text-[#0066ff]" : "text-white/40",
+                    )}
+                  >
+                    <Icon
+                      size={22}
+                      className={active ? "text-[#0066ff]" : "text-white/40"}
+                    />
+                    <span className="text-[11px] font-medium leading-none">
+                      {item.label}
+                    </span>
+                  </button>
+                  {insertQrAfter ? (
+                    <button
+                      type="button"
+                      onPointerDown={() => haptic("medium")}
+                      onClick={() => {
+                        setQrScanError("");
+                        setQrScanOpen(true);
+                      }}
+                      className={cn(
+                        "flex flex-col items-center justify-center gap-1 font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-95",
+                        qrScanOpen ? "text-[#0066ff]" : "text-white/40",
+                      )}
+                      aria-label="Сканер QR"
+                    >
+                      <QrCode
+                        size={22}
+                        className={
+                          qrScanOpen ? "text-[#0066ff]" : "text-white/40"
+                        }
+                      />
+                      <span className="text-[11px] font-medium leading-none">
+                        QR
+                      </span>
+                    </button>
+                  ) : null}
+                </Fragment>
               );
             })}
           </div>
@@ -2415,6 +2451,46 @@ export default function PnkIdPage({
           onSaved={setProfile}
         />
       ) : null}
+
+      <BottomSheet
+        open={qrScanOpen}
+        onClose={() => setQrScanOpen(false)}
+        labelledBy="qr-scan-title"
+      >
+        <h2
+          id="qr-scan-title"
+          className="text-[20px] font-semibold font-[family-name:var(--font-unbounded)] tracking-[-0.02em] mb-2"
+        >
+          Вход по QR
+        </h2>
+        <p className="text-[14px] text-white/45 font-[family-name:var(--font-manrope)] mb-4 leading-relaxed">
+          Наведите камеру на QR-код с экрана входа на другом устройстве.
+        </p>
+        {qrScanError ? (
+          <p className="mb-3 text-[13px] text-red-400 font-[family-name:var(--font-manrope)]">
+            {qrScanError}
+          </p>
+        ) : null}
+        {qrScanOpen ? (
+          <QrScanner
+            autoStart
+            onScan={(raw) => {
+              const code = extractQrCode(raw);
+              if (!code) {
+                setQrScanError("Не удалось распознать QR");
+                haptic("medium");
+                return;
+              }
+              haptic("success");
+              setQrScanOpen(false);
+              window.location.assign(
+                `/qr/approve?code=${encodeURIComponent(code)}`,
+              );
+            }}
+            onError={setQrScanError}
+          />
+        ) : null}
+      </BottomSheet>
     </div>
   );
 }
