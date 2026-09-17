@@ -27,20 +27,18 @@ button,
 [role="button"],
 a {
   -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
+}
+
+/* Let vertical scrolls win over controls inside scroll areas (PWA). */
+main button,
+main [role="button"],
+main a {
+  touch-action: pan-y;
 }
 
 button:focus,
 [role="button"]:focus {
   outline: none;
-}
-
-/* Hide @haptics switch chrome; keep appearance:switch (required for Taptic). */
-[data-haptic-overlay] {
-  outline: none !important;
-  box-shadow: none !important;
-  border: none !important;
-  -webkit-tap-highlight-color: transparent !important;
 }
 
 ::-webkit-scrollbar {

@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@haptics/core": "^2.1.0",
-    "@haptics/react": "^2.1.1",
     "@hugeicons/react": "^1.1.10",
     "@prisma/client": "^6.19.0",
     "bcryptjs": "^3.0.3",

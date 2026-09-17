@@ -3,7 +3,7 @@
 import { useCallback, useRef } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 
-const DEFAULT_MOVE_PX = 10;
+const DEFAULT_MOVE_PX = 14;
 
 type PressState = {
   x: number;
@@ -14,7 +14,7 @@ type PressState = {
 
 /**
  * Fire only on a real tap (press + release without dragging).
- * Stable across re-renders so scroll gestures don't flip tabs.
+ * Cancels as soon as the finger moves — so scrolling over controls stays a scroll.
  */
 export function usePressTap(
   onTap: () => void,
@@ -30,6 +30,25 @@ export function usePressTap(
     pointerId: null,
   });
 
+  const clear = useCallback(() => {
+    state.current = {
+      x: 0,
+      y: 0,
+      tracking: false,
+      pointerId: null,
+    };
+  }, []);
+
+  const movedTooFar = useCallback(
+    (clientX: number, clientY: number) => {
+      const s = state.current;
+      const dx = clientX - s.x;
+      const dy = clientY - s.y;
+      return dx * dx + dy * dy > moveThresholdPx * moveThresholdPx;
+    },
+    [moveThresholdPx],
+  );
+
   const onPointerDown = useCallback((e: ReactPointerEvent<HTMLElement>) => {
     if (e.button !== 0) return;
     state.current = {
@@ -40,25 +59,38 @@ export function usePressTap(
     };
   }, []);
 
+  const onPointerMove = useCallback(
+    (e: ReactPointerEvent<HTMLElement>) => {
+      const s = state.current;
+      if (!s.tracking || s.pointerId !== e.pointerId) return;
+      if (movedTooFar(e.clientX, e.clientY)) clear();
+    },
+    [clear, movedTooFar],
+  );
+
   const onPointerUp = useCallback(
     (e: ReactPointerEvent<HTMLElement>) => {
       const s = state.current;
       if (!s.tracking || s.pointerId !== e.pointerId) return;
-      state.current = { ...s, tracking: false, pointerId: null };
-      const dx = e.clientX - s.x;
-      const dy = e.clientY - s.y;
-      if (dx * dx + dy * dy <= moveThresholdPx * moveThresholdPx) {
-        onTapRef.current();
-      }
+      const ok = !movedTooFar(e.clientX, e.clientY);
+      clear();
+      if (ok) onTapRef.current();
     },
-    [moveThresholdPx],
+    [clear, movedTooFar],
   );
 
-  const onPointerCancel = useCallback((e: ReactPointerEvent<HTMLElement>) => {
-    const s = state.current;
-    if (s.pointerId !== e.pointerId) return;
-    state.current = { ...s, tracking: false, pointerId: null };
-  }, []);
+  const onPointerCancel = useCallback(
+    (e: ReactPointerEvent<HTMLElement>) => {
+      if (state.current.pointerId !== e.pointerId) return;
+      clear();
+    },
+    [clear],
+  );
 
-  return { onPointerDown, onPointerUp, onPointerCancel };
+  return {
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    onPointerCancel,
+  };
 }

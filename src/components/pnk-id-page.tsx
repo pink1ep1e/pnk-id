@@ -213,12 +213,17 @@ function Row({
   trailing?: ReactNode;
   onClick?: () => void;
 }) {
+  const press = usePressTap(() => {
+    if (!onClick) return;
+    haptic("selection");
+    onClick();
+  });
+
   return (
     <div
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
-      data-haptic={onClick ? "selection" : undefined}
-      onClick={onClick}
+      {...(onClick ? press : {})}
       onKeyDown={
         onClick
           ? (e) => {
@@ -231,9 +236,8 @@ function Row({
           : undefined
       }
       className={cn(
-        "relative w-full flex items-center gap-3.5 min-h-[64px] px-4 py-3 text-left transition-colors duration-100",
-        onClick &&
-          "cursor-pointer hover:bg-white/[0.03] active:bg-white/[0.05] active:scale-[0.995]",
+        "w-full flex items-center gap-3.5 min-h-[64px] px-4 py-3 text-left transition-colors duration-100",
+        onClick && "cursor-pointer hover:bg-white/[0.03]",
       )}
     >
       <span className="h-10 w-10 rounded-[12px] bg-[#24262e] flex items-center justify-center shrink-0 text-white/65">
@@ -297,18 +301,20 @@ function Toggle({
   checked: boolean;
   onChange: (v: boolean) => void;
 }) {
+  const press = usePressTap(() => {
+    haptic("selection");
+    onChange(!checked);
+  });
+
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
-      data-haptic="selection"
-      onClick={(e) => {
-        e.stopPropagation();
-        onChange(!checked);
-      }}
+      {...press}
+      onClick={(e) => e.stopPropagation()}
       className={cn(
-        "relative h-7 w-12 rounded-full transition-colors duration-150 shrink-0 active:scale-95",
+        "relative h-7 w-12 rounded-full transition-colors duration-150 shrink-0",
         checked ? "bg-[#0066ff]" : "bg-[#3a3e48]",
       )}
     >
@@ -359,13 +365,17 @@ function DetailShell({
   onBack: () => void;
   children: ReactNode;
 }) {
+  const back = usePressTap(() => {
+    haptic("light");
+    onBack();
+  });
+
   return (
     <div className="pb-16">
       <button
         type="button"
-        data-haptic="impact-light"
-        onClick={onBack}
-        className="relative inline-flex items-center gap-2 text-[14px] text-white/45 hover:text-white font-[family-name:var(--font-manrope)] transition-colors duration-100 mb-5 active:opacity-70"
+        {...back}
+        className="inline-flex items-center gap-2 text-[14px] text-white/45 hover:text-white font-[family-name:var(--font-manrope)] transition-colors duration-100 mb-5"
       >
         <ArrowRight size={16} className="rotate-180" />
         Назад
@@ -389,14 +399,19 @@ function PrimaryBtn({
   variant?: "blue" | "ghost" | "dark";
   disabled?: boolean;
 }) {
+  const press = usePressTap(() => {
+    if (disabled || !onClick) return;
+    haptic("medium");
+    onClick();
+  });
+
   return (
     <button
       type="button"
-      data-haptic={disabled ? undefined : "impact-medium"}
-      onClick={onClick}
+      {...(disabled ? {} : press)}
       disabled={disabled}
       className={cn(
-        "relative w-full h-12 rounded-full text-[15px] font-semibold font-[family-name:var(--font-manrope)] transition-[transform,opacity,background-color] duration-100 disabled:opacity-40 disabled:pointer-events-none active:scale-[0.98]",
+        "w-full h-12 rounded-full text-[15px] font-semibold font-[family-name:var(--font-manrope)] transition-[opacity,background-color] duration-100 disabled:opacity-40 disabled:pointer-events-none",
         variant === "blue" && "bg-[#0066ff] hover:bg-[#0052cc] text-white",
         variant === "dark" && "bg-[#1c1e24] hover:bg-[#22252c] text-white",
         variant === "ghost" &&
@@ -925,10 +940,12 @@ function EditProfileModal({
                 <button
                   key={g.id}
                   type="button"
-                  data-haptic="selection"
-                  onClick={() => setGender(g.id)}
+                  onClick={() => {
+                    haptic("selection");
+                    setGender(g.id);
+                  }}
                   className={cn(
-                    "relative h-14 rounded-[16px] cursor-pointer text-[15px] font-semibold font-[family-name:var(--font-manrope)] transition-[transform,colors] duration-100 border active:scale-[0.98]",
+                    "h-14 rounded-[16px] cursor-pointer text-[15px] font-semibold font-[family-name:var(--font-manrope)] transition-colors duration-100 border",
                     gender === g.id
                       ? "bg-[#0066ff] border-[#0066ff] text-white"
                       : "bg-transparent border-white/20 text-white/50 hover:border-white/35 hover:text-white/70",
@@ -964,9 +981,12 @@ function EditProfileModal({
         <button
           type="button"
           disabled={saving}
-          data-haptic={saving ? undefined : "impact-medium"}
-          onClick={() => void save()}
-          className="relative w-full h-12 rounded-full bg-[#0066ff] hover:bg-[#0052cc] transition-[transform,background-color] duration-100 text-[15px] font-semibold font-[family-name:var(--font-manrope)] disabled:opacity-50 active:scale-[0.98]"
+          onClick={() => {
+            if (saving) return;
+            haptic("medium");
+            void save();
+          }}
+          className="w-full h-12 rounded-full bg-[#0066ff] hover:bg-[#0052cc] transition-colors duration-100 text-[15px] font-semibold font-[family-name:var(--font-manrope)] disabled:opacity-50"
         >
           {saving ? "Сохранение…" : "Сохранить"}
         </button>
@@ -2113,10 +2133,12 @@ export default function PnkIdPage({
               <button
                 key={item.id}
                 type="button"
-                data-haptic="selection"
-                onClick={() => switchNav(item.id)}
+                onClick={() => {
+                  haptic("selection");
+                  switchNav(item.id);
+                }}
                 className={cn(
-                  "relative w-full flex items-center gap-3 px-3 py-2.5 rounded-[14px] text-[14px] font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-[0.98]",
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-[14px] text-[14px] font-[family-name:var(--font-manrope)] transition-colors duration-100",
                   active
                     ? "bg-[#1a1c22] text-white"
                     : "text-white/55 hover:bg-white/[0.04] hover:text-white/85",
@@ -2150,9 +2172,11 @@ export default function PnkIdPage({
           </p>
           <button
             type="button"
-            data-haptic="impact-medium"
-            onClick={() => void logout()}
-            className="relative flex items-center gap-1.5 hover:text-white/50 transition-colors"
+            onClick={() => {
+              haptic("medium");
+              void logout();
+            }}
+            className="flex items-center gap-1.5 hover:text-white/50 transition-colors"
           >
             <LogOut size={12} />
             Выйти
@@ -2167,11 +2191,12 @@ export default function PnkIdPage({
           <Logo variant="id" href="/cabinet" className="w-[64px] max-h-7" />
           <button
             type="button"
-            data-haptic={profile ? "impact-medium" : undefined}
             onClick={() => {
-              if (profile) void logout();
+              if (!profile) return;
+              haptic("medium");
+              void logout();
             }}
-            className="relative text-[12px] text-white/45 font-[family-name:var(--font-manrope)] hover:text-white/70 w-12 text-right"
+            className="text-[12px] text-white/45 font-[family-name:var(--font-manrope)] hover:text-white/70 w-12 text-right"
           >
             Выйти
           </button>
@@ -2216,9 +2241,11 @@ export default function PnkIdPage({
                   <div>
                     <button
                       type="button"
-                      data-haptic="impact-light"
-                      onClick={() => setEditOpen(true)}
-                      className="relative w-full rounded-[22px] bg-[#1a1c22] p-4 md:p-5 flex items-center gap-4 text-left hover:bg-[#1e2028] transition-colors duration-100 active:scale-[0.99]"
+                      onClick={() => {
+                        haptic("light");
+                        setEditOpen(true);
+                      }}
+                      className="w-full rounded-[22px] bg-[#1a1c22] p-4 md:p-5 flex items-center gap-4 text-left hover:bg-[#1e2028] transition-colors duration-100"
                     >
                       <div
                         className={cn(
