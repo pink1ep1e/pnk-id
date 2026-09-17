@@ -2381,10 +2381,10 @@ export default function PnkIdPage({
         </main>
 
         <nav
-          className="md:hidden shrink-0 z-40 border-t border-white/[0.06] bg-[#12141a]/95 backdrop-blur-md pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]"
+          className="md:hidden shrink-0 z-40 border-t border-white/[0.06] bg-[#12141a]/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
           aria-label="Разделы"
         >
-          <div className="grid grid-cols-4 h-[50px]">
+          <div className="grid grid-cols-4 h-[58px]">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = !panel && !qrScanOpen && nav === item.id;
@@ -2399,15 +2399,15 @@ export default function PnkIdPage({
                       switchNav(item.id);
                     }}
                     className={cn(
-                      "flex flex-col items-center justify-center gap-0.5 font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-95",
+                      "flex flex-col items-center justify-end gap-1 pb-1.5 font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-95",
                       active ? "text-[#0066ff]" : "text-white/40",
                     )}
                   >
                     <Icon
-                      size={20}
+                      size={24}
                       className={active ? "text-[#0066ff]" : "text-white/40"}
                     />
-                    <span className="text-[10px] font-medium leading-none">
+                    <span className="text-[11px] font-semibold leading-none">
                       {item.label}
                     </span>
                   </button>
@@ -2420,18 +2420,18 @@ export default function PnkIdPage({
                         setQrScanOpen(true);
                       }}
                       className={cn(
-                        "flex flex-col items-center justify-center gap-0.5 font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-95",
+                        "flex flex-col items-center justify-end gap-1 pb-1.5 font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-95",
                         qrScanOpen ? "text-[#0066ff]" : "text-white/40",
                       )}
                       aria-label="Сканер QR"
                     >
                       <QrCode
-                        size={20}
+                        size={24}
                         className={
                           qrScanOpen ? "text-[#0066ff]" : "text-white/40"
                         }
                       />
-                      <span className="text-[10px] font-medium leading-none">
+                      <span className="text-[11px] font-semibold leading-none">
                         QR
                       </span>
                     </button>
