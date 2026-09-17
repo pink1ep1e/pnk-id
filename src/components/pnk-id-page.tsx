@@ -8,7 +8,7 @@ import { SelectField } from "@/components/select-field";
 import { TextField } from "@/components/text-field";
 import { QrScanner, extractQrCode } from "@/components/qr-scanner";
 import { cn } from "@/lib/utils";
-import { haptic } from "@/lib/haptic";
+import { haptic, primeHaptics } from "@/lib/haptic";
 import { TIMEZONES, formatRuPhone, phoneDigits } from "@/lib/profile";
 import {
   getPasswordStrength,
@@ -2000,6 +2000,16 @@ export default function PnkIdPage({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const prime = () => primeHaptics();
+    window.addEventListener("pointerdown", prime, { once: true, passive: true });
+    window.addEventListener("touchstart", prime, { once: true, passive: true });
+    return () => {
+      window.removeEventListener("pointerdown", prime);
+      window.removeEventListener("touchstart", prime);
+    };
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
@@ -2381,10 +2391,13 @@ export default function PnkIdPage({
         </main>
 
         <nav
-          className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-white/[0.06] bg-[#12141a] pb-[max(0px,calc(env(safe-area-inset-bottom)-14px))]"
+          className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-white/[0.06] bg-[#12141a]"
           aria-label="Разделы"
+          style={{
+            paddingBottom: "max(2px, env(safe-area-inset-bottom, 0px) - 26px)",
+          }}
         >
-          <div className="grid grid-cols-4 h-[56px]">
+          <div className="grid grid-cols-4 h-[52px]">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = !panel && !qrScanOpen && nav === item.id;
@@ -2399,12 +2412,12 @@ export default function PnkIdPage({
                       switchNav(item.id);
                     }}
                     className={cn(
-                      "flex flex-col items-center justify-center gap-1 font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-95",
+                      "flex flex-col items-center justify-end gap-1 pb-1 font-[family-name:var(--font-manrope)] transition-[transform,colors] duration-75 active:scale-90 active:opacity-80",
                       active ? "text-[#0066ff]" : "text-white/40",
                     )}
                   >
                     <Icon
-                      size={24}
+                      size={26}
                       className={active ? "text-[#0066ff]" : "text-white/40"}
                     />
                     <span className="text-[11px] font-semibold leading-none">
@@ -2420,13 +2433,13 @@ export default function PnkIdPage({
                         setQrScanOpen(true);
                       }}
                       className={cn(
-                        "flex flex-col items-center justify-center gap-1 font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-95",
+                        "flex flex-col items-center justify-end gap-1 pb-1 font-[family-name:var(--font-manrope)] transition-[transform,colors] duration-75 active:scale-90 active:opacity-80",
                         qrScanOpen ? "text-[#0066ff]" : "text-white/40",
                       )}
                       aria-label="Сканер QR"
                     >
                       <QrCode
-                        size={24}
+                        size={26}
                         className={
                           qrScanOpen ? "text-[#0066ff]" : "text-white/40"
                         }
