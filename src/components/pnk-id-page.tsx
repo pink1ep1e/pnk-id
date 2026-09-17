@@ -2137,9 +2137,9 @@ export default function PnkIdPage({
       </aside>
 
       <div className="flex-1 min-w-0 min-h-0 flex flex-col">
-        <header className="md:hidden sticky top-0 z-40 flex items-center justify-between gap-3 px-4 py-3 bg-[#0c0d10]/95 backdrop-blur shrink-0">
-          <div className="w-14" aria-hidden />
-          <Logo variant="id" href="/cabinet" className="w-[88px]" />
+        <header className="md:hidden sticky top-0 z-40 flex items-center justify-between gap-3 px-4 pt-[max(0.4rem,env(safe-area-inset-top))] pb-2 bg-[#0c0d10]/95 backdrop-blur shrink-0">
+          <div className="w-12" aria-hidden />
+          <Logo variant="id" href="/cabinet" className="w-[64px] max-h-7" />
           <button
             type="button"
             onPointerDown={() => {
@@ -2148,14 +2148,14 @@ export default function PnkIdPage({
             onClick={() => {
               if (profile) void logout();
             }}
-            className="text-[13px] text-white/45 font-[family-name:var(--font-manrope)] hover:text-white/70 w-14 text-right"
+            className="text-[12px] text-white/45 font-[family-name:var(--font-manrope)] hover:text-white/70 w-12 text-right"
           >
             Выйти
           </button>
         </header>
 
         <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 md:px-10 lg:px-14 py-6 md:py-10">
-          <div className="max-w-[720px] pb-24 md:pb-16">
+          <div className="max-w-[720px] pb-20 md:pb-16">
             {showSkeleton ? (
               <CabinetSkeleton />
             ) : (
@@ -2381,10 +2381,10 @@ export default function PnkIdPage({
         </main>
 
         <nav
-          className="md:hidden shrink-0 z-40 border-t border-white/[0.06] bg-[#12141a]/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
+          className="md:hidden shrink-0 z-40 border-t border-white/[0.06] bg-[#12141a]/95 backdrop-blur-md pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]"
           aria-label="Разделы"
         >
-          <div className="grid grid-cols-4 h-[64px]">
+          <div className="grid grid-cols-4 h-[50px]">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = !panel && !qrScanOpen && nav === item.id;
@@ -2399,15 +2399,15 @@ export default function PnkIdPage({
                       switchNav(item.id);
                     }}
                     className={cn(
-                      "flex flex-col items-center justify-center gap-1 font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-95",
+                      "flex flex-col items-center justify-center gap-0.5 font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-95",
                       active ? "text-[#0066ff]" : "text-white/40",
                     )}
                   >
                     <Icon
-                      size={22}
+                      size={20}
                       className={active ? "text-[#0066ff]" : "text-white/40"}
                     />
-                    <span className="text-[11px] font-medium leading-none">
+                    <span className="text-[10px] font-medium leading-none">
                       {item.label}
                     </span>
                   </button>
@@ -2420,18 +2420,18 @@ export default function PnkIdPage({
                         setQrScanOpen(true);
                       }}
                       className={cn(
-                        "flex flex-col items-center justify-center gap-1 font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-95",
+                        "flex flex-col items-center justify-center gap-0.5 font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-95",
                         qrScanOpen ? "text-[#0066ff]" : "text-white/40",
                       )}
                       aria-label="Сканер QR"
                     >
                       <QrCode
-                        size={22}
+                        size={20}
                         className={
                           qrScanOpen ? "text-[#0066ff]" : "text-white/40"
                         }
                       />
-                      <span className="text-[11px] font-medium leading-none">
+                      <span className="text-[10px] font-medium leading-none">
                         QR
                       </span>
                     </button>

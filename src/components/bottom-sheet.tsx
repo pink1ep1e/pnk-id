@@ -91,7 +91,7 @@ export function BottomSheet({
             aria-modal
             aria-labelledby={labelledBy}
             className={cn(
-              "relative z-10 w-full sm:max-w-[520px] max-h-[92dvh] flex flex-col rounded-t-[28px] sm:rounded-[28px] bg-[#1a1c22] shadow-[0_24px_80px_rgba(0,0,0,0.55)]",
+              "relative z-10 w-full sm:max-w-[520px] max-h-[88dvh] flex flex-col rounded-t-[28px] sm:rounded-[28px] bg-[#1a1c22] shadow-[0_24px_80px_rgba(0,0,0,0.55)]",
               className,
             )}
             initial={mobile ? { y: "100%" } : { opacity: 0, scale: 0.96, y: 12 }}
@@ -111,15 +111,19 @@ export function BottomSheet({
             onMouseDown={(e) => e.stopPropagation()}
           >
             <div
-              className="sm:hidden flex justify-center pt-3 pb-1 shrink-0 touch-none cursor-grab active:cursor-grabbing"
+              className="sm:hidden flex justify-center items-center shrink-0 touch-none cursor-grab active:cursor-grabbing min-h-11 pt-3 pb-2"
               onPointerDown={(e) => {
                 if (dismissible) dragControls.start(e);
               }}
+              aria-label="Потяните вниз, чтобы закрыть"
             >
-              <span className="h-1 w-10 rounded-full bg-white/30" aria-hidden />
+              <span
+                className="h-1.5 w-12 rounded-full bg-white/45 shadow-[0_0_0_10px_transparent]"
+                aria-hidden
+              />
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2 sm:p-7 sm:pt-6">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-1 sm:p-7 sm:pt-6">
               {children}
             </div>
           </motion.div>

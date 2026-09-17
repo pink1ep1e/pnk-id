@@ -45,7 +45,7 @@ export function Logo({
       priority={priority}
       className={cn(
         "select-none object-contain",
-        variant === "id" && "h-auto w-[96px] md:w-[110px]",
+        variant === "id" && "h-auto w-[72px] md:w-[110px]",
         variant === "text" && "h-auto w-[120px] md:w-[160px]",
         variant === "mark" && "h-11 w-11 md:h-12 md:w-12 rounded-[14px]",
         variant === "bg" && "h-auto w-[140px] md:w-[180px]",
