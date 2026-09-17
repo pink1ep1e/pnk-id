@@ -9,6 +9,7 @@ import { TextField } from "@/components/text-field";
 import { QrScanner, extractQrCode } from "@/components/qr-scanner";
 import { cn } from "@/lib/utils";
 import { haptic } from "@/lib/haptic";
+import { usePressTap } from "@/lib/press-tap";
 import { TIMEZONES, formatRuPhone, phoneDigits } from "@/lib/profile";
 import {
   getPasswordStrength,
@@ -132,6 +133,39 @@ const navItems: { id: NavId; label: string; icon: typeof User }[] = [
   { id: "security", label: "Безопасность", icon: Shield },
   { id: "support", label: "Поддержка", icon: Support },
 ];
+
+function MobileTabButton({
+  active,
+  label,
+  icon: Icon,
+  onTap,
+  "aria-label": ariaLabel,
+}: {
+  active: boolean;
+  label: string;
+  icon: typeof User;
+  onTap: () => void;
+  "aria-label"?: string;
+}) {
+  const press = usePressTap(onTap);
+  return (
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      {...press}
+      className={cn(
+        "relative flex flex-col items-center justify-end gap-1 pb-1 font-[family-name:var(--font-manrope)] transition-colors duration-75 select-none",
+        active ? "text-[#0066ff]" : "text-white/40",
+      )}
+    >
+      <Icon
+        size={26}
+        className={active ? "text-[#0066ff]" : "text-white/40"}
+      />
+      <span className="text-[11px] font-semibold leading-none">{label}</span>
+    </button>
+  );
+}
 
 function avatarLetter(p: Profile | null): string {
   const src = (p?.displayName || p?.firstName || p?.login || "?").trim();
@@ -2383,50 +2417,28 @@ export default function PnkIdPage({
               const insertQrAfter = item.id === "security";
               return (
                 <Fragment key={item.id}>
-                  <button
-                    type="button"
-                    data-haptic="selection"
-                    onClick={() => {
+                  <MobileTabButton
+                    active={active}
+                    label={item.label}
+                    icon={Icon}
+                    onTap={() => {
+                      haptic("selection");
                       setQrScanOpen(false);
                       switchNav(item.id);
                     }}
-                    className={cn(
-                      "relative flex flex-col items-center justify-end gap-1 pb-1 font-[family-name:var(--font-manrope)] transition-[transform,colors] duration-75 active:scale-90 active:opacity-80",
-                      active ? "text-[#0066ff]" : "text-white/40",
-                    )}
-                  >
-                    <Icon
-                      size={26}
-                      className={active ? "text-[#0066ff]" : "text-white/40"}
-                    />
-                    <span className="text-[11px] font-semibold leading-none">
-                      {item.label}
-                    </span>
-                  </button>
+                  />
                   {insertQrAfter ? (
-                    <button
-                      type="button"
-                      data-haptic="impact-medium"
-                      onClick={() => {
+                    <MobileTabButton
+                      active={qrScanOpen}
+                      label="QR"
+                      icon={QrCode}
+                      aria-label="Сканер QR"
+                      onTap={() => {
+                        haptic("medium");
                         setQrScanError("");
                         setQrScanOpen(true);
                       }}
-                      className={cn(
-                        "relative flex flex-col items-center justify-end gap-1 pb-1 font-[family-name:var(--font-manrope)] transition-[transform,colors] duration-75 active:scale-90 active:opacity-80",
-                        qrScanOpen ? "text-[#0066ff]" : "text-white/40",
-                      )}
-                      aria-label="Сканер QR"
-                    >
-                      <QrCode
-                        size={26}
-                        className={
-                          qrScanOpen ? "text-[#0066ff]" : "text-white/40"
-                        }
-                      />
-                      <span className="text-[11px] font-semibold leading-none">
-                        QR
-                      </span>
-                    </button>
+                    />
                   ) : null}
                 </Fragment>
               );

@@ -30,6 +30,19 @@ a {
   touch-action: manipulation;
 }
 
+button:focus,
+[role="button"]:focus {
+  outline: none;
+}
+
+/* Hide @haptics switch chrome; keep appearance:switch (required for Taptic). */
+[data-haptic-overlay] {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
 ::-webkit-scrollbar {
   display: none;
 }
