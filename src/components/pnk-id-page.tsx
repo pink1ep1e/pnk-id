@@ -2074,7 +2074,7 @@ export default function PnkIdPage({
   const showSkeleton = loading || !profile;
 
   return (
-    <div className="h-dvh bg-[#0c0d10] text-white flex overflow-hidden">
+    <div className="h-dvh min-h-[-webkit-fill-available] bg-[#0c0d10] text-white flex overflow-hidden">
       <aside className="hidden md:flex w-[240px] shrink-0 flex-col px-3 py-5 min-h-0">
         <div className="px-2 mb-6 shrink-0">
           <Logo variant="id" href="/cabinet" className="w-[96px]" priority />
@@ -2154,8 +2154,8 @@ export default function PnkIdPage({
           </button>
         </header>
 
-        <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 md:px-10 lg:px-14 py-6 md:py-10">
-          <div className="max-w-[720px] pb-20 md:pb-16">
+        <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 md:px-10 lg:px-14 py-6 md:py-10 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-10">
+          <div className="max-w-[720px] pb-8 md:pb-16">
             {showSkeleton ? (
               <CabinetSkeleton />
             ) : (
@@ -2381,10 +2381,10 @@ export default function PnkIdPage({
         </main>
 
         <nav
-          className="md:hidden shrink-0 z-40 border-t border-white/[0.06] bg-[#12141a]/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
+          className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-white/[0.06] bg-[#12141a] pb-[max(0px,calc(env(safe-area-inset-bottom)-14px))]"
           aria-label="Разделы"
         >
-          <div className="grid grid-cols-4 h-[58px]">
+          <div className="grid grid-cols-4 h-[56px]">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = !panel && !qrScanOpen && nav === item.id;
@@ -2399,7 +2399,7 @@ export default function PnkIdPage({
                       switchNav(item.id);
                     }}
                     className={cn(
-                      "flex flex-col items-center justify-end gap-1 pb-1.5 font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-95",
+                      "flex flex-col items-center justify-center gap-1 font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-95",
                       active ? "text-[#0066ff]" : "text-white/40",
                     )}
                   >
@@ -2420,7 +2420,7 @@ export default function PnkIdPage({
                         setQrScanOpen(true);
                       }}
                       className={cn(
-                        "flex flex-col items-center justify-end gap-1 pb-1.5 font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-95",
+                        "flex flex-col items-center justify-center gap-1 font-[family-name:var(--font-manrope)] transition-colors duration-100 active:scale-95",
                         qrScanOpen ? "text-[#0066ff]" : "text-white/40",
                       )}
                       aria-label="Сканер QR"
