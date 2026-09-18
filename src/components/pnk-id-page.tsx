@@ -154,7 +154,7 @@ function MobileTabButton({
       aria-label={ariaLabel}
       {...press}
       className={cn(
-        "relative flex flex-col items-center justify-end gap-1 pb-1 font-[family-name:var(--font-manrope)] transition-colors duration-75 select-none",
+        "relative flex flex-col items-center justify-end gap-0.5 pb-0 font-[family-name:var(--font-manrope)] transition-colors duration-75 select-none",
         active ? "text-[#0066ff]" : "text-white/40",
       )}
     >
@@ -2431,10 +2431,10 @@ export default function PnkIdPage({
         </main>
 
         <nav
-          className="md:hidden shrink-0 z-40 border-t border-white/[0.06] bg-[#12141a] pb-[max(0.5rem,calc(env(safe-area-inset-bottom,0px)-20px))]"
+          className="md:hidden shrink-0 z-40 border-t border-white/[0.06] bg-[#12141a] pb-[max(2px,calc(env(safe-area-inset-bottom,0px)-30px))]"
           aria-label="Разделы"
         >
-          <div className="grid grid-cols-4 h-[52px]">
+          <div className="grid grid-cols-4 h-[48px]">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = !panel && !qrScanOpen && nav === item.id;
