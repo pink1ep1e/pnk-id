@@ -4,8 +4,6 @@
   --background: #0c0d10;
   --foreground: #ffffff;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  /* Pull tab icons down into the home-indicator zone (bank-app style). */
-  --tab-bar-offset: calc(2px - env(safe-area-inset-bottom, 0px));
 }
 
 html {
