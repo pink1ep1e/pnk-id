@@ -2043,7 +2043,7 @@ export default function PnkIdPage({
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [apps, setApps] = useState<AppRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const mobileTabRef = useRef<HTMLNavElement | null>(null);
+  const mobileTabRef = useRef<HTMLElement | null>(null);
 
   // Keep the tab bar glued to the real screen bottom on iOS PWA
   // (fixed + safe-area alone often leaves a floating gap).
@@ -2461,7 +2461,9 @@ export default function PnkIdPage({
       </div>
 
       <nav
-        ref={mobileTabRef}
+        ref={(el) => {
+          mobileTabRef.current = el;
+        }}
         className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-white/[0.06] bg-[#12141a]"
         aria-label="Разделы"
         style={{ paddingBottom: 8 }}
