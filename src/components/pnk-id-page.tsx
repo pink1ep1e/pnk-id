@@ -2431,7 +2431,7 @@ export default function PnkIdPage({
         </main>
 
         <nav
-          className="md:hidden shrink-0 z-40 border-t border-white/[0.06] bg-[#12141a] pb-[env(safe-area-inset-bottom)]"
+          className="md:hidden shrink-0 z-40 border-t border-white/[0.06] bg-[#12141a] pb-[max(0.5rem,calc(env(safe-area-inset-bottom,0px)-20px))]"
           aria-label="Разделы"
         >
           <div className="grid grid-cols-4 h-[52px]">
