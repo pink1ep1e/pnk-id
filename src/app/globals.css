@@ -10,6 +10,7 @@ html {
   color-scheme: dark;
   -webkit-text-size-adjust: 100%;
   height: 100%;
+  height: -webkit-fill-available;
 }
 
 body {
