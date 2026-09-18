@@ -4,6 +4,7 @@
   --background: #0c0d10;
   --foreground: #ffffff;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --app-height: 100dvh;
 }
 
 html {
@@ -11,7 +12,6 @@ html {
   color-scheme: dark;
   -webkit-text-size-adjust: 100%;
   height: 100%;
-  height: -webkit-fill-available;
 }
 
 body {
@@ -21,31 +21,84 @@ body {
   touch-action: manipulation;
   overscroll-behavior: none;
   min-height: 100%;
-  min-height: 100dvh;
-  min-height: -webkit-fill-available;
+  min-height: var(--app-height);
 }
 
-/* iOS PWA tab bar: paint through the home-indicator gap under the bar. */
-.mobile-tab-bar {
+/*
+  WebKit standalone PWA bug: 100dvh / -webkit-fill-available exclude the
+  bottom safe-area, leaving a theme-colored gap under fixed bottom bars.
+  Compensate shell height and shift the tab bar into that gap.
+*/
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  :root {
+    --app-height: 100vh;
+  }
+
+  html,
+  body {
+    height: 100vh;
+    min-height: 100vh;
+  }
+
+  .cabinet-shell {
+    height: 100vh;
+    max-height: 100vh;
+    min-height: 100vh;
+  }
+
+  .mobile-tab-bar {
+    bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
+    padding-bottom: 8px;
+  }
+
+  .mobile-tab-bar::after {
+    content: none;
+  }
+
+  .mobile-tab-bar__items {
+    margin-bottom: 0;
+  }
+}
+
+html.standalone,
+html.standalone body {
+  height: 100vh;
+  min-height: 100vh;
+}
+
+html.standalone {
+  --app-height: 100vh;
+}
+
+html.standalone .cabinet-shell {
+  height: 100vh;
+  max-height: 100vh;
+  min-height: 100vh;
+}
+
+html.standalone .mobile-tab-bar {
+  bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
   padding-bottom: 8px;
-  padding-bottom: calc(8px + constant(safe-area-inset-bottom));
+}
+
+html.standalone .mobile-tab-bar::after {
+  content: none;
+}
+
+html.standalone .mobile-tab-bar__items {
+  margin-bottom: 0;
+}
+
+.cabinet-shell {
+  height: var(--app-height);
+  max-height: var(--app-height);
+}
+
+.mobile-tab-bar {
   padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
 }
 
-.mobile-tab-bar::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 100%;
-  height: 40px;
-  background: #12141a;
-  pointer-events: none;
-}
-
 .mobile-tab-bar__items {
-  margin-bottom: 0;
-  margin-bottom: calc(4px - constant(safe-area-inset-bottom));
   margin-bottom: calc(4px - env(safe-area-inset-bottom, 0px));
 }
 

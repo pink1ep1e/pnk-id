@@ -45,7 +45,10 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#0c0d10",
+  themeColor: [
+    { media: "(display-mode: standalone)", color: "#12141a" },
+    { color: "#0c0d10" },
+  ],
 };
 
 export default function RootLayout({
@@ -58,6 +61,11 @@ export default function RootLayout({
       <body
         className={`${unbounded.variable} ${manrope.variable} antialiased bg-[#0c0d10] text-white font-[family-name:var(--font-manrope)]`}
       >
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(window.matchMedia('(display-mode:standalone)').matches||window.navigator.standalone)document.documentElement.classList.add('standalone')}catch(e){}`,
+          }}
+        />
         {children}
       </body>
     </html>

@@ -2119,7 +2119,7 @@ export default function PnkIdPage({
   const showSkeleton = loading || !profile;
 
   return (
-    <div className="h-dvh min-h-[-webkit-fill-available] bg-[#0c0d10] text-white flex">
+    <div className="cabinet-shell bg-[#0c0d10] text-white flex overflow-hidden">
       <aside className="hidden md:flex w-[240px] shrink-0 flex-col px-3 py-5 min-h-0">
         <div className="px-2 mb-6 shrink-0">
           <Logo variant="id" href="/cabinet" className="w-[96px]" priority />
