@@ -2435,7 +2435,7 @@ export default function PnkIdPage({
         className="mobile-tab-bar md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-white/[0.06] bg-[#12141a]"
         aria-label="Разделы"
       >
-        <div className="mobile-tab-bar__items grid grid-cols-4 h-[49px]">
+        <div className="grid grid-cols-4 h-[49px]">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = !panel && !qrScanOpen && nav === item.id;

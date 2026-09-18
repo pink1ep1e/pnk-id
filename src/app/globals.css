@@ -25,9 +25,9 @@ body {
 }
 
 /*
-  WebKit standalone PWA bug: 100dvh / -webkit-fill-available exclude the
-  bottom safe-area, leaving a theme-colored gap under fixed bottom bars.
-  Compensate shell height and shift the tab bar into that gap.
+  WebKit standalone PWA: 100dvh is short by the bottom safe-area.
+  100vh includes it — use that in installed mode so bottom:0 is the
+  real screen edge. Do NOT also apply a negative bottom offset.
 */
 @media (display-mode: standalone), (display-mode: fullscreen) {
   :root {
@@ -39,25 +39,10 @@ body {
     height: 100vh;
     min-height: 100vh;
   }
+}
 
-  .cabinet-shell {
-    height: 100vh;
-    max-height: 100vh;
-    min-height: 100vh;
-  }
-
-  .mobile-tab-bar {
-    bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
-    padding-bottom: 8px;
-  }
-
-  .mobile-tab-bar::after {
-    content: none;
-  }
-
-  .mobile-tab-bar__items {
-    margin-bottom: 0;
-  }
+html.standalone {
+  --app-height: 100vh;
 }
 
 html.standalone,
@@ -66,40 +51,14 @@ html.standalone body {
   min-height: 100vh;
 }
 
-html.standalone {
-  --app-height: 100vh;
-}
-
-html.standalone .cabinet-shell {
-  height: 100vh;
-  max-height: 100vh;
-  min-height: 100vh;
-}
-
-html.standalone .mobile-tab-bar {
-  bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
-  padding-bottom: 8px;
-}
-
-html.standalone .mobile-tab-bar::after {
-  content: none;
-}
-
-html.standalone .mobile-tab-bar__items {
-  margin-bottom: 0;
-}
-
 .cabinet-shell {
   height: var(--app-height);
   max-height: var(--app-height);
 }
 
 .mobile-tab-bar {
-  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-}
-
-.mobile-tab-bar__items {
-  margin-bottom: calc(4px - env(safe-area-inset-bottom, 0px));
+  bottom: 0;
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
 }
 
 button,
