@@ -2119,7 +2119,7 @@ export default function PnkIdPage({
   const showSkeleton = loading || !profile;
 
   return (
-    <div className="h-dvh min-h-[-webkit-fill-available] bg-[#0c0d10] text-white flex overflow-hidden">
+    <div className="h-dvh min-h-[-webkit-fill-available] bg-[#0c0d10] text-white flex">
       <aside className="hidden md:flex w-[240px] shrink-0 flex-col px-3 py-5 min-h-0">
         <div className="px-2 mb-6 shrink-0">
           <Logo variant="id" href="/cabinet" className="w-[96px]" priority />
@@ -2185,7 +2185,7 @@ export default function PnkIdPage({
         </div>
       </aside>
 
-      <div className="flex-1 min-w-0 min-h-0 flex flex-col">
+      <div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
         <header className="md:hidden sticky top-0 z-40 flex items-center justify-between gap-3 px-4 pt-[max(0.4rem,env(safe-area-inset-top))] pb-2 bg-[#0c0d10]/95 backdrop-blur shrink-0">
           <div className="w-12" aria-hidden />
           <Logo variant="id" href="/cabinet" className="w-[64px] max-h-7" />
@@ -2202,7 +2202,7 @@ export default function PnkIdPage({
           </button>
         </header>
 
-        <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 md:px-10 lg:px-14 py-6 md:py-10 pb-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:pb-10">
+        <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 md:px-10 lg:px-14 py-6 md:py-10 pb-[calc(4.25rem+var(--safe-bottom))] md:pb-10">
           <div className="max-w-[720px] pb-8 md:pb-16">
             {showSkeleton ? (
               <CabinetSkeleton />
@@ -2429,47 +2429,51 @@ export default function PnkIdPage({
             )}
           </div>
         </main>
+      </div>
 
-        <nav
-          className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-white/[0.06] bg-[#12141a] pb-[env(safe-area-inset-bottom,0px)]"
-          aria-label="Разделы"
+      <nav
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-white/[0.06] bg-[#12141a]"
+        aria-label="Разделы"
+        style={{ paddingBottom: "var(--safe-bottom)" }}
+      >
+        <div
+          className="grid grid-cols-4 h-[49px]"
+          style={{ marginBottom: "var(--tab-bar-offset)" }}
         >
-          <div className="grid grid-cols-4 h-[49px] mb-[calc(0.5rem-env(safe-area-inset-bottom,0px))]">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const active = !panel && !qrScanOpen && nav === item.id;
-              const insertQrAfter = item.id === "security";
-              return (
-                <Fragment key={item.id}>
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = !panel && !qrScanOpen && nav === item.id;
+            const insertQrAfter = item.id === "security";
+            return (
+              <Fragment key={item.id}>
+                <MobileTabButton
+                  active={active}
+                  label={item.label}
+                  icon={Icon}
+                  onTap={() => {
+                    haptic("selection");
+                    setQrScanOpen(false);
+                    switchNav(item.id);
+                  }}
+                />
+                {insertQrAfter ? (
                   <MobileTabButton
-                    active={active}
-                    label={item.label}
-                    icon={Icon}
+                    active={qrScanOpen}
+                    label="QR"
+                    icon={QrCode}
+                    aria-label="Сканер QR"
                     onTap={() => {
-                      haptic("selection");
-                      setQrScanOpen(false);
-                      switchNav(item.id);
+                      haptic("medium");
+                      setQrScanError("");
+                      setQrScanOpen(true);
                     }}
                   />
-                  {insertQrAfter ? (
-                    <MobileTabButton
-                      active={qrScanOpen}
-                      label="QR"
-                      icon={QrCode}
-                      aria-label="Сканер QR"
-                      onTap={() => {
-                        haptic("medium");
-                        setQrScanError("");
-                        setQrScanOpen(true);
-                      }}
-                    />
-                  ) : null}
-                </Fragment>
-              );
-            })}
-          </div>
-        </nav>
-      </div>
+                ) : null}
+              </Fragment>
+            );
+          })}
+        </div>
+      </nav>
 
       {profile ? (
         <EditProfileModal
