@@ -2043,35 +2043,6 @@ export default function PnkIdPage({
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [apps, setApps] = useState<AppRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const mobileTabRef = useRef<HTMLElement | null>(null);
-
-  // Keep the tab bar glued to the real screen bottom on iOS PWA
-  // (fixed + safe-area alone often leaves a floating gap).
-  useEffect(() => {
-    const tab = mobileTabRef.current;
-    if (!tab) return;
-
-    const sync = () => {
-      tab.style.transform = "";
-      const rect = tab.getBoundingClientRect();
-      const gap = Math.round(window.innerHeight - rect.bottom);
-      if (gap > 0) {
-        tab.style.transform = `translateY(${gap}px)`;
-      }
-    };
-
-    sync();
-    const raf = window.requestAnimationFrame(sync);
-    window.addEventListener("resize", sync);
-    window.visualViewport?.addEventListener("resize", sync);
-    window.visualViewport?.addEventListener("scroll", sync);
-    return () => {
-      window.cancelAnimationFrame(raf);
-      window.removeEventListener("resize", sync);
-      window.visualViewport?.removeEventListener("resize", sync);
-      window.visualViewport?.removeEventListener("scroll", sync);
-    };
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -2461,14 +2432,10 @@ export default function PnkIdPage({
       </div>
 
       <nav
-        ref={(el) => {
-          mobileTabRef.current = el;
-        }}
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-white/[0.06] bg-[#12141a]"
+        className="mobile-tab-bar md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-white/[0.06] bg-[#12141a]"
         aria-label="Разделы"
-        style={{ paddingBottom: 8 }}
       >
-        <div className="grid grid-cols-4 h-[49px]">
+        <div className="mobile-tab-bar__items grid grid-cols-4 h-[49px]">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = !panel && !qrScanOpen && nav === item.id;
