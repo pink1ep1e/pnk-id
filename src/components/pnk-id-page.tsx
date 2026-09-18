@@ -130,7 +130,7 @@ type RecoveryRow = {
 
 const navItems: { id: NavId; label: string; icon: typeof User }[] = [
   { id: "data", label: "Данные", icon: User },
-  { id: "security", label: "Безопасность", icon: Shield },
+  { id: "security", label: "Безопасность", icon: Lock },
   { id: "support", label: "Поддержка", icon: Support },
 ];
 
