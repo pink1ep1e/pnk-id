@@ -58,7 +58,7 @@ html.standalone body {
 
 .mobile-tab-bar {
   bottom: 0;
-  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
 }
 
 button,
