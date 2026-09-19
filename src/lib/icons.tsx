@@ -1,11 +1,10 @@
 /**
- * Site icons — Hugeicons Pro Rounded/Solid (filled).
- * Icon path data is generated from the Pro SVG pack via scripts/generate-solid-icons.py
+ * Site icons — Streamline Flex Solid.
+ * Path data generated via scripts/generate-streamline-icons.py
+ * Source: https://github.com/webalys-hq/streamline-vectors/tree/main/flex/solid
  */
 "use client";
 
-import { HugeiconsIcon } from "@hugeicons/react";
-import type { IconSvgElement } from "@hugeicons/react";
 import {
   AlignCenterIcon,
   AlignLeftIcon,
@@ -97,6 +96,7 @@ import {
   UsersIcon,
   Wand2Icon,
   XIcon,
+  type StreamlinePath,
 } from "@/lib/generated/solid-icons";
 import { cn } from "@/lib/utils";
 
@@ -108,22 +108,35 @@ type IconProps = {
   absoluteStrokeWidth?: boolean;
 };
 
-function makeIcon(icon: IconSvgElement) {
+function makeIcon(paths: readonly StreamlinePath[]) {
   function Icon({
     size = 24,
     className,
     color = "currentColor",
   }: IconProps) {
     return (
-      <HugeiconsIcon
-        icon={icon}
-        size={size}
-        color={color}
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size}
+        height={size}
+        viewBox="0 0 14 14"
+        fill="none"
         className={cn("shrink-0", className)}
-      />
+        aria-hidden
+      >
+        {paths.map((p, i) => (
+          <path
+            key={i}
+            d={p.d}
+            fill={color}
+            fillRule={p.fillRule as "evenodd" | "nonzero" | undefined}
+            clipRule={p.clipRule as "evenodd" | "nonzero" | undefined}
+          />
+        ))}
+      </svg>
     );
   }
-  Icon.displayName = "HiSolidIcon";
+  Icon.displayName = "StreamlineSolidIcon";
   return Icon;
 }
 
@@ -220,4 +233,4 @@ export const Car = makeIcon(CarIcon);
 export const Star = makeIcon(StarIcon);
 export const Support = makeIcon(SupportIcon);
 
-export type { IconSvgElement, IconProps };
+export type { IconProps, StreamlinePath };
