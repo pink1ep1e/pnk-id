@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Unbounded, Manrope } from "next/font/google";
+import { OfflineProvider } from "@/components/offline-provider";
 import "./globals.css";
 
 const unbounded = Unbounded({
@@ -66,7 +67,7 @@ export default function RootLayout({
             __html: `try{if(window.matchMedia('(display-mode:standalone)').matches||window.navigator.standalone)document.documentElement.classList.add('standalone')}catch(e){}`,
           }}
         />
-        {children}
+        <OfflineProvider>{children}</OfflineProvider>
       </body>
     </html>
   );
