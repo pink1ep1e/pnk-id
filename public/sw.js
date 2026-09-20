@@ -1,5 +1,5 @@
 /* Minimal offline fallback for pnk ID PWA */
-const CACHE = "pnk-id-offline-v1";
+const CACHE = "pnk-id-offline-v2";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {
