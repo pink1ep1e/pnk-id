@@ -28,7 +28,22 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
-    void navigator.serviceWorker.register("/sw.js").catch(() => {});
+    void navigator.serviceWorker
+      .register("/sw.js", { updateViaCache: "none" })
+      .then((reg) => {
+        void reg.update();
+        // Drop ancient caches left by previous SW versions.
+        if ("caches" in window) {
+          void caches.keys().then((keys) =>
+            Promise.all(
+              keys
+                .filter((k) => k.startsWith("pnk-id-offline-") && k !== "pnk-id-offline-v4")
+                .map((k) => caches.delete(k)),
+            ),
+          );
+        }
+      })
+      .catch(() => {});
   }, []);
 
   return (

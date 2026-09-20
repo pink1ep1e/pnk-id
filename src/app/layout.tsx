@@ -63,7 +63,7 @@ const offlineBootScript = `(()=>{try{
   window.addEventListener('online',hide);
   if(btn)btn.addEventListener('click',function(){location.reload()});
   if(window.matchMedia('(display-mode:standalone)').matches||window.navigator.standalone)document.documentElement.classList.add('standalone');
-  if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(function(){});
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(function(r){try{r.update()}catch(e){}}).catch(function(){});
 }catch(e){}})();`;
 
 export default function RootLayout({
