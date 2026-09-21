@@ -20,6 +20,7 @@ import { useServiceBrand } from "@/lib/use-service-brand";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 
 const primaryBtn =
@@ -59,8 +60,10 @@ export default function RegisterPage() {
 }
 
 function RegisterInner() {
+  const params = useSearchParams();
   const { brand, serviceId, next, footerCopy } = useServiceBrand();
-  const afterRegister = afterAuthPath(brand, next);
+  const state = params.get("state");
+  const afterRegister = afterAuthPath(brand, next, state);
   const [step, setStep] = useState<Step>("name");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
