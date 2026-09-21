@@ -23,6 +23,7 @@ ARG JWT_SECRET=build-time-placeholder-min-32-characters!!
 ARG SESSION_SECRET=build-time-placeholder-min-32-characters!
 ENV JWT_SECRET=$JWT_SECRET
 ENV SESSION_SECRET=$SESSION_SECRET
+ENV DOCKER=1
 RUN npx prisma generate && npx next build \
   && rm -rf /app/.next/cache
 
