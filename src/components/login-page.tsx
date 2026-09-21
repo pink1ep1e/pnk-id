@@ -8,7 +8,6 @@ import {
 import { ArrowRight, QrCode, Trash2, X } from "@/lib/icons";
 import {
   avatarSrcForUser,
-  isStaleAuth,
   loadRememberedAccounts,
   markAccountSignedOut,
   rememberAccount,
@@ -107,12 +106,18 @@ function AccountTile({
   const subtitle = account.displayName || account.login;
 
   return (
-    <div className="rounded-[16px] bg-[#0f1115] overflow-hidden">
-      <div className="flex items-center gap-1 pr-1.5">
+    <div
+      className={cn(
+        "group relative rounded-[16px] bg-[#0f1115] overflow-hidden transition-colors",
+        "hover:bg-[#14161c]",
+        confirmOpen && "bg-[#14161c]",
+      )}
+    >
+      <div className="flex items-stretch">
         <button
           type="button"
           onClick={onSelect}
-          className="min-w-0 flex-1 flex items-center gap-3 px-3.5 py-3.5 text-left hover:bg-white/[0.03] transition-colors"
+          className="min-w-0 flex-1 flex items-center gap-3 px-3.5 py-3.5 text-left transition-colors"
         >
           <AccountAvatar account={account} />
           <div className="min-w-0 flex-1">
@@ -129,12 +134,17 @@ function AccountTile({
             ) : null}
           </div>
         </button>
-        {!confirmOpen && (
+        <div className="shrink-0 w-12 flex items-center justify-center pr-1.5">
           <button
             type="button"
-            className="shrink-0 h-10 w-10 rounded-[12px] flex items-center justify-center text-white/35 hover:bg-white/5 hover:text-white/70 transition-colors"
+            className={cn(
+              "h-10 w-10 rounded-[12px] flex items-center justify-center transition-colors",
+              "text-white/35 hover:bg-white/8 hover:text-white/75",
+              confirmOpen && "invisible pointer-events-none",
+            )}
             aria-label="Убрать из списка"
             title="Убрать из списка"
+            tabIndex={confirmOpen ? -1 : 0}
             onClick={(e) => {
               e.stopPropagation();
               onAskRemove();
@@ -142,7 +152,7 @@ function AccountTile({
           >
             <Trash2 size={16} />
           </button>
-        )}
+        </div>
       </div>
 
       <AnimatePresence initial={false}>
@@ -152,23 +162,23 @@ function AccountTile({
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.18 }}
-            className="overflow-hidden"
+            className="overflow-hidden border-t border-white/[0.06]"
           >
-            <div className="px-3.5 pb-3.5 flex items-center gap-2">
-              <p className="flex-1 text-[13px] text-white/45 font-[family-name:var(--font-manrope)]">
+            <div className="px-3.5 py-3 flex items-center gap-2 bg-[#0c0d10]/60">
+              <p className="flex-1 text-[13px] text-white/45 font-[family-name:var(--font-manrope)] leading-snug">
                 Убрать из списка на этом устройстве?
               </p>
               <button
                 type="button"
                 onClick={onCancelRemove}
-                className="h-9 px-3 rounded-[10px] bg-[#1a1c22] text-[13px] text-white/60 hover:text-white font-[family-name:var(--font-manrope)]"
+                className="h-9 px-3 rounded-[10px] bg-[#1a1c22] text-[13px] text-white/60 hover:text-white hover:bg-[#22252c] font-[family-name:var(--font-manrope)] transition-colors"
               >
                 Нет
               </button>
               <button
                 type="button"
                 onClick={onConfirmRemove}
-                className="h-9 px-3 rounded-[10px] bg-[#2a1215] text-[13px] text-red-400 hover:bg-[#3a181c] font-[family-name:var(--font-manrope)] font-medium"
+                className="h-9 px-3 rounded-[10px] bg-[#2a1215] text-[13px] text-red-400 hover:bg-[#3a181c] font-[family-name:var(--font-manrope)] font-medium transition-colors"
               >
                 Убрать
               </button>
@@ -234,9 +244,8 @@ function LoginInner() {
           });
           setCurrent({
             user,
-            authenticatedAt: json.data.authenticatedAt || null,
-            needsReauth: Boolean(json.data.needsReauth) ||
-              isStaleAuth(json.data.authenticatedAt),
+            authenticatedAt: json.data.authenticatedAt || json.data.lastSeenAt || null,
+            needsReauth: Boolean(json.data.needsReauth),
           });
           refreshRemembered();
         } else {

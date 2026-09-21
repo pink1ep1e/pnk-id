@@ -1458,6 +1458,10 @@ function PanelView({
         setError(json.error?.message || "Не удалось удалить");
         return;
       }
+      const { removeRememberedAccount } = await import(
+        "@/lib/remembered-accounts"
+      );
+      if (profile.id) removeRememberedAccount(profile.id);
       onDeleted();
     } catch {
       setError("Ошибка сети");
@@ -1874,8 +1878,8 @@ function PanelView({
       {panel === "delete" && (
         <div className="space-y-4">
           <InfoBanner>
-            Удаление аккаунта необратимо: сессии и доступы приложений будут
-            отозваны.
+            Удаление безвозвратно: аккаунт и все связанные данные (сессии,
+            доступы приложений, переписка поддержки) будут стёрты из базы.
           </InfoBanner>
           <div className="rounded-[18px] bg-[#1a1c22] p-4">
             <TextField

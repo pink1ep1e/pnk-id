@@ -123,14 +123,26 @@ async function getAuthFromToken(token: string): Promise<AuthContext | null> {
       user: true,
     },
   });
-  if (!session || session.revokedAt || session.expiresAt < new Date()) {
-    return null;
-  }
+  if (!session || session.revokedAt) return null;
   if (session.user.deletedAt) return null;
 
+  const now = new Date();
+  // Kick if idle longer than SESSION_DAYS since last activity
+  const idleMs = now.getTime() - session.lastSeenAt.getTime();
+  if (
+    session.expiresAt < now ||
+    idleMs > SESSION_DAYS * 24 * 60 * 60 * 1000
+  ) {
+    return null;
+  }
+
+  // Sliding window: each use extends session another month
   await prisma.session.update({
     where: { id: session.id },
-    data: { lastSeenAt: new Date() },
+    data: {
+      lastSeenAt: now,
+      expiresAt: sessionExpiry(),
+    },
   });
 
   const u = session.user;

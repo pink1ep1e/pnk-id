@@ -72,12 +72,15 @@ export function removeRememberedAccount(userId: string) {
   save(loadRememberedAccounts().filter((a) => a.id !== userId));
 }
 
-/** Session older than this → password required even if cookie somehow alive */
+/** Idle / unused longer than this → treat as signed out on client */
 export const REAUTH_AFTER_MS = 30 * 24 * 60 * 60 * 1000;
 
-export function isStaleAuth(authenticatedAt: string | number | Date | null | undefined) {
-  if (!authenticatedAt) return true;
+/** Prefer lastSeenAt from /api/auth/me. Null/missing ⇒ not stale if server said ok. */
+export function isStaleAuth(
+  authenticatedAt: string | number | Date | null | undefined,
+) {
+  if (!authenticatedAt) return false;
   const t = new Date(authenticatedAt).getTime();
-  if (!Number.isFinite(t)) return true;
+  if (!Number.isFinite(t)) return false;
   return Date.now() - t > REAUTH_AFTER_MS;
 }

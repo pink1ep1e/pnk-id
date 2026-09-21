@@ -13,7 +13,7 @@ const deleteSchema = z.object({
   password: z.string().min(1).max(128),
 });
 
-/** Soft-delete account (sets deletedAt, revokes sessions) */
+/** Hard-delete account and all related rows (sessions, OAuth, support, …). */
 export async function DELETE(req: NextRequest) {
   const auth = await getAuthFromRequest(req);
   if (!auth) return jsonError("Не авторизован", 401, "unauthorized");
@@ -29,27 +29,15 @@ export async function DELETE(req: NextRequest) {
       return jsonError("Неверный пароль", 400, "bad_password");
     }
 
-    const now = new Date();
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: user.id },
-        data: { deletedAt: now },
-      }),
-      prisma.session.updateMany({
-        where: { userId: user.id, revokedAt: null },
-        data: { revokedAt: now },
-      }),
-      prisma.appConsent.updateMany({
-        where: { userId: user.id, revokedAt: null },
-        data: { revokedAt: now },
-      }),
-      prisma.refreshToken.updateMany({
-        where: { userId: user.id, revokedAt: null },
-        data: { revokedAt: now },
-      }),
-    ]);
+    const userId = user.id;
 
-    const res = jsonOk({ deleted: true });
+    await prisma.$transaction(async (tx) => {
+      // QrChallenge uses onDelete: SetNull — remove explicitly
+      await tx.qrChallenge.deleteMany({ where: { userId } });
+      await tx.user.delete({ where: { id: userId } });
+    });
+
+    const res = jsonOk({ deleted: true, userId });
     clearSessionCookie(res);
     return res;
   } catch (e) {
