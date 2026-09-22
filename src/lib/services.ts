@@ -3,6 +3,8 @@
  * Add new services here — each gets its own logo + install links.
  */
 
+import { isPassableOAuthState } from "@/lib/oauth-state";
+
 export type ServiceBrand = {
   /** Short key used in ?service= */
   id: string;
@@ -69,10 +71,10 @@ export const SERVICES: ServiceBrand[] = [
     id: "mail",
     clientIds: ["pnk-mail"],
     name: "pnk почта",
-    logoSrc: "/logo-blue-bg.svg",
+    logoSrc: "/logo-big-mail.svg",
     logoAlt: "pnk почта",
     logoWidth: 180,
-    logoHeight: 96,
+    logoHeight: 180,
     homeHref: MAIL_ORIGIN,
     registerTitle: "Создание ящика",
     registerCta: "Создать ящик",
@@ -161,8 +163,8 @@ export function afterAuthPath(
   }
   if (brand.id !== "id" && brand.oauthClientId && brand.oauthRedirectUri) {
     const q = new URLSearchParams({ service: brand.id });
-    if (state && /^[A-Za-z0-9_-]{8,128}$/.test(state)) {
-      q.set("state", state);
+    if (isPassableOAuthState(state)) {
+      q.set("state", state!);
     }
     return `/api/auth/continue?${q.toString()}`;
   }

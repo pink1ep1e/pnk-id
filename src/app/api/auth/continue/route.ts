@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getAuthFromRequest } from "@/lib/auth";
 import { parseJsonArray, randomToken, toJsonArray } from "@/lib/crypto";
 import { resolveServiceBrand } from "@/lib/services";
+import { isPassableOAuthState } from "@/lib/oauth-state";
 
 /**
  * After login/register for a first-party service: issue an auth code
@@ -75,8 +76,8 @@ export async function GET(req: NextRequest) {
   const redirect = new URL(brand.oauthRedirectUri);
   redirect.searchParams.set("code", code);
   const state = url.searchParams.get("state")?.trim();
-  if (state && /^[A-Za-z0-9_-]{8,128}$/.test(state)) {
-    redirect.searchParams.set("state", state);
+  if (isPassableOAuthState(state)) {
+    redirect.searchParams.set("state", state!);
   }
   return NextResponse.redirect(redirect);
 }

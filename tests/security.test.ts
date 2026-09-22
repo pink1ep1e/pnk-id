@@ -75,6 +75,13 @@ describe("afterAuthPath open-redirect safety", async () => {
     const path = afterAuthPath(brand as never, null, "abc12345state");
     assert.match(path, /state=abc12345state/);
   });
+
+  it("passes signed oauth state with dots", () => {
+    const signed =
+      "m1abcxyz.rndpart.abcdefghijklmnopqrstuvwxyz0123456789_-";
+    const path = afterAuthPath(brand as never, null, signed);
+    assert.match(path, new RegExp(`state=${signed.replace(/\./g, "\\.")}`));
+  });
 });
 
 describe("logout next open-redirect", () => {
