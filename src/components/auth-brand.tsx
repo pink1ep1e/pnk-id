@@ -7,10 +7,29 @@ import Link from "next/link";
 
 export { ServiceInstallBar };
 
-export function AuthBrandHeader({ brand }: { brand: ServiceBrand }) {
+export function AuthBrandHeader({
+  brand,
+  onBack,
+}: {
+  brand: ServiceBrand;
+  /** Optional back control (e.g. close mail iframe overlay). */
+  onBack?: () => void;
+}) {
   const isTall = brand.logoHeight >= 80;
   return (
-    <header className="pt-8 md:pt-10 pb-6 flex justify-center px-4">
+    <header className="pt-8 md:pt-10 pb-6 flex justify-center px-4 relative">
+      {onBack ? (
+        <button
+          type="button"
+          onClick={onBack}
+          className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 inline-flex items-center justify-center rounded-full text-white/70 hover:bg-white/5"
+          aria-label="Назад"
+        >
+          <span className="text-[22px] leading-none" aria-hidden>
+            ←
+          </span>
+        </button>
+      ) : null}
       <Link
         href={brand.homeHref}
         className="inline-flex shrink-0 items-center"

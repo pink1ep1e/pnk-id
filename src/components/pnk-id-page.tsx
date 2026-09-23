@@ -2028,8 +2028,14 @@ function CabinetSkeleton() {
 
 export default function PnkIdPage({
   onUnauthorized,
+  embed = false,
+  fromMail = false,
 }: {
   onUnauthorized?: () => void;
+  /** Opened inside another app iframe (e.g. mail PWA). */
+  embed?: boolean;
+  /** Show back control that closes the parent overlay. */
+  fromMail?: boolean;
 } = {}) {
   const router = useRouter();
   const goLogin = useCallback(() => {
@@ -2047,6 +2053,25 @@ export default function PnkIdPage({
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [apps, setApps] = useState<AppRow[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("embed", embed);
+    return () => {
+      document.documentElement.classList.remove("embed");
+    };
+  }, [embed]);
+
+  const closeToMail = useCallback(() => {
+    haptic("selection");
+    if (typeof window !== "undefined" && window.parent !== window) {
+      window.parent.postMessage({ type: "pnk-id-close" }, "*");
+      return;
+    }
+    const mail =
+      process.env.NEXT_PUBLIC_MAIL_URL?.replace(/\/$/, "") ||
+      "http://localhost:3000";
+    window.location.href = `${mail}/mail`;
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -2191,8 +2216,25 @@ export default function PnkIdPage({
 
       <div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
         <header className="md:hidden sticky top-0 z-40 flex items-center justify-between gap-3 px-4 pt-[max(0.4rem,env(safe-area-inset-top))] pb-2 bg-[#0c0d10]/95 backdrop-blur shrink-0">
-          <div className="w-12" aria-hidden />
-          <Logo variant="id" href="/cabinet" className="w-[64px] max-h-7" />
+          <div className="flex items-center gap-1 min-w-0">
+            {fromMail ? (
+              <button
+                type="button"
+                onClick={closeToMail}
+                className="h-9 w-9 -ml-1 inline-flex items-center justify-center rounded-full text-white/80 hover:bg-white/5"
+                aria-label="Назад в почту"
+              >
+                <ArrowRight size={18} className="rotate-180" />
+              </button>
+            ) : (
+              <div className="w-9" aria-hidden />
+            )}
+            <Logo
+              variant="id"
+              href={fromMail ? "" : "/cabinet"}
+              className="w-[64px] max-h-7"
+            />
+          </div>
           <button
             type="button"
             onClick={() => {
@@ -2200,7 +2242,7 @@ export default function PnkIdPage({
               haptic("medium");
               void logout();
             }}
-            className="text-[12px] text-white/45 font-[family-name:var(--font-manrope)] hover:text-white/70 w-12 text-right"
+            className="text-[12px] text-white/45 font-[family-name:var(--font-manrope)] hover:text-white/70 w-12 text-right shrink-0"
           >
             Выйти
           </button>

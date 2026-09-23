@@ -197,6 +197,19 @@ function LoginInner() {
   const state = params.get("state");
   const afterLogin = afterAuthPath(brand, next, state);
   const modeAdd = params.get("mode") === "add";
+  const fromMail = params.get("from") === "mail";
+  const embed = params.get("embed") === "1";
+
+  const closeToMail = () => {
+    if (typeof window !== "undefined" && window.parent !== window) {
+      window.parent.postMessage({ type: "pnk-id-close" }, "*");
+      return;
+    }
+    const mail =
+      process.env.NEXT_PUBLIC_MAIL_URL?.replace(/\/$/, "") ||
+      "http://localhost:3000";
+    window.location.href = `${mail}/mail`;
+  };
 
   const [view, setView] = useState<View>("picker");
   const [active, setActive] = useState<LoginMethod | null>(null);
@@ -441,7 +454,10 @@ function LoginInner() {
 
   return (
     <div className="min-h-screen bg-[#0c0d10] text-white flex flex-col">
-      <AuthBrandHeader brand={brand} />
+      <AuthBrandHeader
+        brand={brand}
+        onBack={fromMail || embed ? closeToMail : undefined}
+      />
 
       <main className="flex-1 flex flex-col items-center px-4 pb-10">
         <div className="w-full max-w-[440px] bg-[#1a1c22] rounded-[24px] md:rounded-[28px] p-4 md:p-5">

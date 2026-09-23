@@ -48,9 +48,29 @@ export function QrScanner({
         },
         () => undefined,
       );
-    } catch {
+    } catch (err) {
       setActive(false);
-      onError?.("Не удалось открыть камеру");
+      const name =
+        err && typeof err === "object" && "name" in err
+          ? String((err as { name?: string }).name)
+          : "";
+      if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+        onError?.(
+          "Нет доступа к камере. Разрешите камеру для этого сайта и откройте сканер снова.",
+        );
+      } else if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+        onError?.("Камера не найдена на этом устройстве.");
+      } else if (
+        name === "NotReadableError" ||
+        name === "TrackStartError" ||
+        name === "AbortError"
+      ) {
+        onError?.(
+          "Камера занята другим приложением. Закройте его и попробуйте снова.",
+        );
+      } else {
+        onError?.("Не удалось открыть камеру");
+      }
     }
   }
 
