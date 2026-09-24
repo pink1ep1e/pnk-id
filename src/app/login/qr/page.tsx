@@ -73,7 +73,7 @@ export default function QrLoginPage() {
   return (
     <div className="min-h-dvh bg-[#0c0d10] text-white flex flex-col items-center px-4 py-10">
       <div className="mb-8">
-        <Logo variant="id" href="/" className="w-[120px]" />
+        <Logo variant="id" href="/" className="w-[88px]" />
       </div>
       <div className="w-full max-w-[420px] text-center">
         <p className="text-[24px] font-semibold mb-2 font-[family-name:var(--font-unbounded)]">

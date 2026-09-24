@@ -41,10 +41,11 @@ export function AuthBrandHeader({
           width={brand.logoWidth}
           height={brand.logoHeight}
           priority
+          unoptimized
           className={
             isTall
               ? "select-none object-contain w-[140px] md:w-[180px] h-auto rounded-[32px]"
-              : "select-none object-contain w-[96px] md:w-[110px] h-auto"
+              : "select-none object-contain w-[72px] md:w-[88px] h-auto"
           }
         />
       </Link>
