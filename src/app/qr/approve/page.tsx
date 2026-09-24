@@ -55,7 +55,7 @@ function ApproveInner() {
     <div className="min-h-dvh bg-[#0c0d10] text-white flex items-center justify-center px-4">
       <div className="w-full max-w-[400px] rounded-[24px] bg-[#1a1c22] p-6 text-center">
         <div className="mb-5 flex justify-center">
-          <Logo variant="id" href="/cabinet" className="w-[72px]" />
+          <Logo variant="id" href="/cabinet" className="w-[110px]" />
         </div>
         <p className="text-xl font-semibold mb-2 font-[family-name:var(--font-unbounded)]">
           Подтверждение QR

@@ -25,16 +25,18 @@ export function Logo({
       ? "/logo-blue-bg.svg"
       : variant === "text"
         ? "/logo-blue-text.svg"
-        : variant === "mark" || variant === "id"
-          ? "/logo-new.svg"
-          : "/logo-new.svg";
+        : variant === "mark"
+          ? "/logo-big-mail.svg"
+          : "/logo-id-new.svg";
 
   const defaultSize =
-    variant === "id" || variant === "mark"
-      ? { width: width ?? 160, height: height ?? 160 }
-      : variant === "text"
-        ? { width: width ?? 160, height: height ?? 85 }
-        : { width: width ?? 48, height: height ?? 48 };
+    variant === "id"
+      ? { width: width ?? 160, height: height ?? 48 }
+      : variant === "mark"
+        ? { width: width ?? 160, height: height ?? 160 }
+        : variant === "text"
+          ? { width: width ?? 160, height: height ?? 85 }
+          : { width: width ?? 48, height: height ?? 48 };
 
   const alt = variant === "id" ? "pnk ID" : "pnk";
 
@@ -45,10 +47,10 @@ export function Logo({
       width={defaultSize.width}
       height={defaultSize.height}
       priority={priority}
-      unoptimized={variant === "id" || variant === "mark"}
+      unoptimized={variant === "mark" || variant === "id"}
       className={cn(
         "select-none object-contain",
-        variant === "id" && "h-auto w-[72px] md:w-[88px]",
+        variant === "id" && "h-auto w-[96px] md:w-[110px]",
         variant === "text" && "h-auto w-[120px] md:w-[160px]",
         variant === "mark" && "h-11 w-11 md:h-12 md:w-12 rounded-[14px]",
         variant === "bg" && "h-auto w-[140px] md:w-[180px]",

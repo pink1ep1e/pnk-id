@@ -5,7 +5,7 @@ export default function HelpPage() {
   return (
     <div className="min-h-dvh bg-[#0c0d10] text-white">
       <header className="px-4 py-4 flex items-center justify-between max-w-[800px] mx-auto">
-        <Logo href="/" className="w-[72px]" />
+        <Logo href="/" className="w-[96px]" />
         <Link href="/login" className="text-sm text-white/45 hover:text-white">
           Войти
         </Link>

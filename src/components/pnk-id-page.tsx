@@ -2151,7 +2151,7 @@ export default function PnkIdPage({
     <div className="cabinet-shell bg-[#0c0d10] text-white flex overflow-hidden">
       <aside className="hidden md:flex w-[240px] shrink-0 flex-col px-3 py-5 min-h-0">
         <div className="px-2 mb-6 shrink-0">
-          <Logo variant="id" href="/cabinet" className="w-[72px]" priority />
+          <Logo variant="id" href="/cabinet" className="w-[96px]" priority />
         </div>
 
         <nav className="flex-1 min-h-0 overflow-y-auto space-y-0.5">
@@ -2232,7 +2232,7 @@ export default function PnkIdPage({
             <Logo
               variant="id"
               href={fromMail ? "" : "/cabinet"}
-              className="w-[48px]"
+              className="w-[88px] max-h-7"
             />
           </div>
           <button

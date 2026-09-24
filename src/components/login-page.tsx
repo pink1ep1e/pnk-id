@@ -14,7 +14,7 @@ import {
   removeRememberedAccount,
   type RememberedAccount,
 } from "@/lib/remembered-accounts";
-import { authHref, afterAuthPath } from "@/lib/services";
+import { authHref, afterAuthPath, DEFAULT_SERVICE, formatFooterCopy } from "@/lib/services";
 import { useServiceBrand } from "@/lib/use-service-brand";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -193,10 +193,21 @@ function AccountTile({
 function LoginInner() {
   const router = useRouter();
   const params = useSearchParams();
-  const { brand, serviceId, next, footerCopy } = useServiceBrand();
+  const {
+    brand: serviceBrand,
+    serviceId,
+    next,
+    footerCopy: serviceFooter,
+  } = useServiceBrand();
   const state = params.get("state");
-  const afterLogin = afterAuthPath(brand, next, state);
   const modeAdd = params.get("mode") === "add";
+  /** Add-account from mail → show pnk ID branding (login is always via ID). */
+  const brand = modeAdd ? DEFAULT_SERVICE : serviceBrand;
+  const footerCopy = modeAdd
+    ? formatFooterCopy(DEFAULT_SERVICE.footerCopy)
+    : serviceFooter;
+  // OAuth continue must still use the original service (mail)
+  const afterLogin = afterAuthPath(serviceBrand, next, state);
   const fromMail = params.get("from") === "mail";
   const embed = params.get("embed") === "1";
 
@@ -466,9 +477,14 @@ function LoginInner() {
               <div className="px-1 pt-1 pb-2 text-center">
                 <p className="font-[family-name:var(--font-unbounded)] font-semibold text-[18px] md:text-[20px] tracking-[-0.03em] leading-snug">
                   {modeAdd
-                    ? "Добавьте или выберите аккаунт"
+                    ? "Войдите через pnk ID"
                     : "Выберите аккаунт для входа"}
                 </p>
+                {modeAdd ? (
+                  <p className="mt-2 text-[13px] text-white/40 font-[family-name:var(--font-manrope)]">
+                    Добавление ящика в почту — через единый аккаунт pnk ID
+                  </p>
+                ) : null}
               </div>
 
               <div className="space-y-2">
@@ -527,13 +543,13 @@ function LoginInner() {
                   className={softBtn}
                   onClick={openOtherAccount}
                 >
-                  Войти в другой аккаунт
+                  Войти через pnk ID
                 </button>
                 <Link
                   href={authHref("/register", { serviceId, next })}
                   className={softBtn}
                 >
-                  Создать новый профиль
+                  Создать pnk ID
                 </Link>
               </div>
             </div>
@@ -708,7 +724,7 @@ function LoginInner() {
           )}
         </div>
 
-        <ServiceInstallBar brand={brand} />
+        <ServiceInstallBar brand={modeAdd ? serviceBrand : brand} />
       </main>
 
       <AuthBrandFooter
