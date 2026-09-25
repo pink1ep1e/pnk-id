@@ -17,38 +17,40 @@ export function AuthBrandHeader({
 }) {
   const isTall = brand.logoHeight >= 80;
   return (
-    <header className="pt-8 md:pt-10 pb-6 flex justify-center px-4 relative">
-      {onBack ? (
-        <button
-          type="button"
-          onClick={onBack}
-          className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 inline-flex items-center justify-center rounded-full text-white/70 hover:bg-white/5"
-          aria-label="Назад"
+    <header className="pt-[max(1.25rem,calc(env(safe-area-inset-top,0px)+0.75rem))] md:pt-10 pb-6 px-4">
+      <div className="relative flex items-center justify-center min-h-11">
+        {onBack ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className="absolute left-0 top-1/2 -translate-y-1/2 h-11 w-11 inline-flex items-center justify-center rounded-full text-white/70 hover:bg-white/5"
+            aria-label="Назад"
+          >
+            <span className="text-[22px] leading-none" aria-hidden>
+              ←
+            </span>
+          </button>
+        ) : null}
+        <Link
+          href={brand.homeHref}
+          className="inline-flex shrink-0 items-center"
+          aria-label={brand.logoAlt}
         >
-          <span className="text-[22px] leading-none" aria-hidden>
-            ←
-          </span>
-        </button>
-      ) : null}
-      <Link
-        href={brand.homeHref}
-        className="inline-flex shrink-0 items-center"
-        aria-label={brand.logoAlt}
-      >
-        <Image
-          src={brand.logoSrc}
-          alt={brand.logoAlt}
-          width={brand.logoWidth}
-          height={brand.logoHeight}
-          priority
-          unoptimized
-          className={
-            isTall
-              ? "select-none object-contain w-[140px] md:w-[180px] h-auto rounded-[32px]"
-              : "select-none object-contain w-[72px] md:w-[88px] h-auto"
-          }
-        />
-      </Link>
+          <Image
+            src={brand.logoSrc}
+            alt={brand.logoAlt}
+            width={brand.logoWidth}
+            height={brand.logoHeight}
+            priority
+            unoptimized
+            className={
+              isTall
+                ? "select-none object-contain w-[140px] md:w-[180px] h-auto rounded-[32px]"
+                : "select-none object-contain w-[96px] md:w-[110px] h-auto"
+            }
+          />
+        </Link>
+      </div>
     </header>
   );
 }
