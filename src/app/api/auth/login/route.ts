@@ -29,6 +29,9 @@ export async function POST(req: NextRequest) {
     if (!user || !(await verifyPassword(body.password, user.passwordHash))) {
       return jsonError("Неверный логин или пароль", 401, "invalid_credentials");
     }
+    if (user.blockedAt) {
+      return jsonError("Аккаунт заблокирован", 403, "blocked");
+    }
 
     const { session, token } = await createSession(user.id, req);
     const res = NextResponse.json({

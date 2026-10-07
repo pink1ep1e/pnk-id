@@ -73,6 +73,9 @@ export async function POST(req: NextRequest) {
   if (!user || user.deletedAt) {
     return jsonError("Пользователь не найден", 404, "not_found");
   }
+  if (user.blockedAt) {
+    return jsonError("Аккаунт заблокирован", 403, "blocked");
+  }
 
   const code = randomToken(32);
   await prisma.authCode.create({

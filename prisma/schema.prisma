@@ -23,9 +23,11 @@ model User {
   birthDate    String?
   timezone     String?  @default("(UTC+03:00) Москва")
   avatarUrl    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
+  /// Set when admin blocks the account (PMP / admin API)
+  blockedAt    DateTime?
 
   sessions         Session[]
   recoveryEmails   RecoveryEmail[]
