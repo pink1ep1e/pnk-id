@@ -1,0 +1,257 @@
+// pnk ID API — PostgreSQL (additive over existing Next.js schema)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  FROZEN
+  BLOCKED
+}
+
+enum PasswordAlgo {
+  argon2id
+  bcrypt
+}
+
+enum PendingRegistrationStatus {
+  PENDING
+  VERIFIED
+  EXPIRED
+  CANCELLED
+}
+
+enum RegistrationAttemptResult {
+  START_OK
+  START_REJECTED
+  VERIFY_OK
+  VERIFY_FAIL
+  RESEND_OK
+  RESEND_REJECTED
+}
+
+/// Primary identity (pnk ID)
+model User {
+  id                String       @id @default(cuid())
+  login             String       @unique
+  email             String?      @unique
+  phone             String?      @unique
+  passwordHash      String
+  passwordAlgo      PasswordAlgo @default(bcrypt)
+  telegramId        BigInt?      @unique
+  telegramUsername  String?
+  status            UserStatus   @default(ACTIVE)
+  registrationIp    String?
+  sandboxUntil      DateTime?
+  lastLoginAt       DateTime?
+  displayName       String?
+  firstName         String?
+  lastName          String?
+  gender            String?
+  birthDate         String?
+  timezone          String?      @default("(UTC+03:00) Москва")
+  avatarUrl         String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  deletedAt         DateTime?
+  /// Set when admin blocks the account (PMP / admin API)
+  blockedAt         DateTime?
+
+  sessions         Session[]
+  recoveryEmails   RecoveryEmail[]
+  qrChallenges     QrChallenge[]
+  consents         AppConsent[]
+  authCodes        AuthCode[]
+  refreshTokens    RefreshToken[]
+  supportMessages  SupportMessage[]
+  auditLogs        AuditLog[]
+}
+
+model Session {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Legacy Next.js opaque session cookie hash (nullable during cutover)
+  tokenHash   String?   @unique
+  /// Nest API refresh token SHA-256 hash
+  refreshHash String?   @unique
+  familyId    String?
+  deviceName  String?
+  deviceType  String? // pc | phone | tablet
+  browser     String?
+  os          String?
+  location    String?
+  ip          String?
+  userAgent   String?
+  current     Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  lastSeenAt  DateTime  @default(now())
+  expiresAt   DateTime
+  revokedAt   DateTime?
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([userId, revokedAt])
+}
+
+model RecoveryEmail {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, email])
+}
+
+/// QR login: desktop shows QR, phone (logged-in session) confirms
+model QrChallenge {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status      String   @default("pending") // pending | scanned | confirmed | expired | cancelled
+  sessionId   String?
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+  confirmedAt DateTime?
+
+  @@index([status])
+}
+
+/// OAuth2 client applications (pnk Mail, future services) — kept for compatibility
+model OAuthClient {
+  id           String   @id @default(cuid())
+  clientId     String   @unique
+  clientSecret String
+  name         String
+  description  String?
+  logoUrl      String?
+  redirectUris String // JSON array as string
+  scopes       String   @default("[\"openid\",\"profile\",\"email\"]")
+  trusted      Boolean  @default(false)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  consents      AppConsent[]
+  authCodes     AuthCode[]
+  refreshTokens RefreshToken[]
+}
+
+model AppConsent {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  scopes    String
+  createdAt DateTime    @default(now())
+  revokedAt DateTime?
+
+  @@unique([userId, clientId])
+}
+
+model AuthCode {
+  id                  String      @id @default(cuid())
+  code                String      @unique
+  userId              String
+  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId            String
+  client              OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  redirectUri         String
+  scopes              String
+  codeChallenge       String?
+  codeChallengeMethod String?
+  expiresAt           DateTime
+  usedAt              DateTime?
+  createdAt           DateTime    @default(now())
+}
+
+model RefreshToken {
+  id        String      @id @default(cuid())
+  tokenHash String      @unique
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  scopes    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime    @default(now())
+}
+
+model SupportMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromRole  String // user | support
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+/// First-party services allowlist for post-auth redirects
+model Service {
+  id                  String   @id @default(cuid())
+  slug                String   @unique
+  name                String
+  allowedRedirectUris String // JSON string[]
+  active              Boolean  @default(true)
+  createdAt           DateTime @default(now())
+}
+
+model PendingRegistration {
+  id              String                     @id @default(cuid())
+  /// Form fields without plaintext password
+  payload         Json
+  passwordHash    String
+  ip              String
+  userAgent       String?
+  tgLinkTokenHash String                     @unique
+  tgCodeHash      String?
+  codeAttempts    Int                        @default(0)
+  codeSentCount   Int                        @default(0)
+  lastCodeSentAt  DateTime?
+  expiresAt       DateTime
+  status          PendingRegistrationStatus  @default(PENDING)
+  serviceSlug     String?
+  redirectUri     String?
+  createdAt       DateTime                   @default(now())
+
+  @@index([ip, createdAt])
+  @@index([expiresAt])
+}
+
+model RegistrationAttempt {
+  id        String                     @id @default(cuid())
+  ip        String
+  subnet    String
+  result    RegistrationAttemptResult
+  username  String?
+  createdAt DateTime                   @default(now())
+
+  @@index([ip, createdAt])
+  @@index([subnet, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  event     String
+  ip        String?
+  userAgent String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([ip, createdAt])
+  @@index([userId, createdAt])
+}
