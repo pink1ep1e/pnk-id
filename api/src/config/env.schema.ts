@@ -11,9 +11,19 @@ const csv = (fallback: string) =>
         .filter(Boolean),
     );
 
+/** Parse JSON object of PEM strings. Handles dotenv expanding \\n inside "double quotes". */
+function parseJsonStringRecord(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    // dotenv: JWT_PRIVATE_KEYS="...\\n..." → real newlines → invalid JSON
+    return JSON.parse(raw.replace(/\r?\n/g, '\\n'));
+  }
+}
+
 const jsonStringRecord = z.string().transform((raw, ctx) => {
   try {
-    const parsed: unknown = JSON.parse(raw);
+    const parsed: unknown = parseJsonStringRecord(raw);
     if (
       typeof parsed !== 'object' ||
       parsed === null ||
