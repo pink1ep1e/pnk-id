@@ -11,9 +11,10 @@ module.exports = {
       // instances: 'max',
       // exec_mode: 'cluster',
       max_memory_restart: '512M',
+      // PORT и остальное — из api/.env (ConfigModule). Не задавай PORT здесь:
+      // иначе он перебьёт .env и врежется в Next на 3100.
       env: {
         NODE_ENV: 'production',
-        PORT: 3100,
       },
     },
   ],
