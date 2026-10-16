@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { AppConfigService } from '../config/config.service';
 
 @Injectable()
 export class CaptchaService {
+  private readonly log = new Logger(CaptchaService.name);
+
   constructor(private readonly config: AppConfigService) {}
 
   async verifyTurnstile(token: string, ip: string): Promise<boolean> {
@@ -17,25 +19,42 @@ export class CaptchaService {
     }
 
     const body = new URLSearchParams({
-      secret: this.config.raw.TURNSTILE_SECRET_KEY,
+      secret,
       response: token,
-      remoteip: ip,
     });
-
-    const res = await fetch(
-      'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-      {
-        method: 'POST',
-        headers: { 'content-type': 'application/x-www-form-urlencoded' },
-        body,
-      },
-    );
-
-    if (!res.ok) {
-      return false;
+    if (ip && ip !== 'unknown') {
+      body.set('remoteip', ip);
     }
 
-    const data = (await res.json()) as { success?: boolean };
-    return data.success === true;
+    try {
+      const res = await fetch(
+        'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/x-www-form-urlencoded' },
+          body,
+        },
+      );
+
+      if (!res.ok) {
+        this.log.warn(`Turnstile HTTP ${res.status}`);
+        return false;
+      }
+
+      const data = (await res.json()) as {
+        success?: boolean;
+        'error-codes'?: string[];
+        hostname?: string;
+      };
+      if (!data.success) {
+        this.log.warn(
+          `Turnstile rejected: ${(data['error-codes'] ?? []).join(',') || 'unknown'} hostname=${data.hostname ?? '-'}`,
+        );
+      }
+      return data.success === true;
+    } catch (err) {
+      this.log.warn(`Turnstile verify error: ${String(err)}`);
+      return false;
+    }
   }
 }
