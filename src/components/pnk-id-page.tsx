@@ -16,6 +16,15 @@ import {
   PasswordStrengthBar,
 } from "@/lib/password-strength";
 import {
+  idBootstrapSession,
+  idChangePassword,
+  idLogout,
+  idLogoutAll,
+  idPatchMe,
+  idRevokeSession,
+  idSessions,
+} from "@/lib/id-api";
+import {
   ArrowRight,
   Call,
   Camera,
@@ -776,20 +785,15 @@ function EditProfileModal({
     setSaving(true);
     setError("");
     try {
-      const res = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          displayName: displayName.trim() || null,
-          firstName: firstName.trim() || null,
-          lastName: lastName.trim() || null,
-          gender,
-          birthDate: birthDate || null,
-          timezone,
-          avatarUrl,
-        }),
+      const json = await idPatchMe({
+        displayName: displayName.trim() || null,
+        firstName: firstName.trim() || null,
+        lastName: lastName.trim() || null,
+        gender,
+        birthDate: birthDate || null,
+        timezone,
+        avatarUrl,
       });
-      const json = await res.json();
       if (!json.ok) {
         setError(json.error?.message || "Не удалось сохранить");
         return;
@@ -1310,12 +1314,7 @@ function PanelView({
     try {
       const digits = phoneDigits(phone);
       const normalized = `+${digits}`;
-      const res = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: normalized }),
-      });
-      const json = await res.json();
+      const json = await idPatchMe({ phone: normalized });
       if (!json.ok) {
         setError(json.error?.message || "Не удалось сохранить");
         return;
@@ -1335,15 +1334,7 @@ function PanelView({
     setBusy(true);
     setError("");
     try {
-      const res = await fetch("/api/security/password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          currentPassword: currentPass,
-          newPassword: password,
-        }),
-      });
-      const json = await res.json();
+      const json = await idChangePassword(currentPass, password);
       if (!json.ok) {
         setError(json.error?.message || "Не удалось обновить пароль");
         return;
@@ -1353,8 +1344,7 @@ function PanelView({
       setPassword2("");
       setSaved(true);
       window.setTimeout(() => setSaved(false), 1600);
-      const s = await fetch("/api/security/sessions");
-      const sJson = await s.json();
+      const sJson = await idSessions();
       if (sJson.ok) onSessions(sJson.data);
     } catch {
       setError("Ошибка сети");
@@ -1364,14 +1354,12 @@ function PanelView({
   };
 
   const revokeSession = async (id: string) => {
-    await fetch(`/api/security/sessions?id=${encodeURIComponent(id)}`, {
-      method: "DELETE",
-    });
+    await idRevokeSession(id);
     onSessions(sessions.filter((x) => x.id !== id));
   };
 
   const revokeOthers = async () => {
-    await fetch(`/api/security/sessions?others=1`, { method: "DELETE" });
+    await idLogoutAll();
     onSessions(sessions.filter((s) => s.current));
   };
 
@@ -1389,12 +1377,9 @@ function PanelView({
     setBusy(true);
     setError("");
     try {
-      const res = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ displayName: senderName.trim() || null }),
+      const json = await idPatchMe({
+        displayName: senderName.trim() || null,
       });
-      const json = await res.json();
       if (!json.ok) {
         setError(json.error?.message || "Не удалось сохранить");
         return;
@@ -2077,29 +2062,33 @@ export default function PnkIdPage({
     let cancelled = false;
     void (async () => {
       try {
-        const [meRes, pRes, sRes, aRes] = await Promise.all([
-          fetch("/api/auth/me"),
-          fetch("/api/profile"),
-          fetch("/api/security/sessions"),
-          fetch("/api/apps"),
-        ]);
-        const [meJson, pJson, sJson, aJson] = await Promise.all([
-          meRes.json(),
-          pRes.json(),
-          sRes.json(),
-          aRes.json(),
-        ]);
+        const user = await idBootstrapSession();
         if (cancelled) return;
-        if (!meJson.ok) {
+        if (!user) {
           goLogin();
           return;
         }
-        if (pJson.ok) {
-          setProfile(pJson.data);
-          setLoading(false);
-        }
+        setProfile({
+          id: user.id,
+          login: user.login,
+          email: user.email,
+          phone: user.phone,
+          displayName: user.displayName,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          gender: user.gender,
+          birthDate: user.birthDate,
+          timezone: user.timezone,
+          avatarUrl: user.avatarUrl,
+        });
+        setLoading(false);
+        const [sJson, aRes] = await Promise.all([
+          idSessions(),
+          fetch("/api/apps").then((r) => r.json()).catch(() => ({ ok: false })),
+        ]);
+        if (cancelled) return;
         if (sJson.ok) setSessions(sJson.data);
-        if (aJson.ok) setApps(aJson.data);
+        if (aRes.ok) setApps(aRes.data);
       } catch {
         if (!cancelled) goLogin();
       } finally {
@@ -2136,7 +2125,7 @@ export default function PnkIdPage({
         await import("@/lib/remembered-accounts");
       markAccountSignedOut(profile.id);
     }
-    await fetch("/api/auth/logout", { method: "POST" });
+    await idLogout();
     goLogin();
   };
 

@@ -5,45 +5,29 @@ import {
   AuthBrandHeader,
   ServiceInstallBar,
 } from "@/components/auth-brand";
-import { DateField } from "@/components/date-field";
-import { PhoneField } from "@/components/phone-field";
-import { SelectField } from "@/components/select-field";
 import { TextField } from "@/components/text-field";
+import { TurnstileField } from "@/components/turnstile-field";
 import { ArrowRight, Check } from "@/lib/icons";
-import { TIMEZONES, phoneDigits, suggestLogins } from "@/lib/profile";
 import {
   getPasswordStrength,
   PasswordStrengthBar,
 } from "@/lib/password-strength";
-import { authHref, afterAuthPath } from "@/lib/services";
+import {
+  idRegisterResend,
+  idRegisterStart,
+  idRegisterVerify,
+} from "@/lib/id-api";
+import { afterAuthPath, authHref } from "@/lib/services";
 import { useServiceBrand } from "@/lib/use-service-brand";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { motion, AnimatePresence } from "motion/react";
 
 const primaryBtn =
   "mt-1 h-[54px] md:h-[56px] w-full rounded-[12px] bg-[#0066ff] text-white font-[family-name:var(--font-manrope)] font-semibold text-[17px] inline-flex items-center justify-center gap-2 hover:bg-[#0052cc] transition-colors disabled:opacity-40 disabled:pointer-events-none";
 
-type Step = "name" | "login" | "details" | "password";
-
-const MAIL_DOMAIN = "pnkmail.ru";
-
-function sanitizeEmailLocal(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]/g, "")
-    .slice(0, 32);
-}
-
-function expandSuggestions(base: string[]): string[] {
-  const out = new Set(base);
-  for (const s of base) {
-    for (let i = 1; i <= 9; i++) out.add(`${s}${i}`);
-  }
-  return [...out].filter((x) => x.length >= 3 && x.length <= 32).slice(0, 24);
-}
+type Step = "account" | "telegram" | "code";
 
 export default function RegisterPage() {
   return (
@@ -64,226 +48,65 @@ function RegisterInner() {
   const { brand, serviceId, next, footerCopy } = useServiceBrand();
   const state = params.get("state");
   const afterRegister = afterAuthPath(brand, next, state);
-  const [step, setStep] = useState<Step>("name");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [login, setLogin] = useState("");
-  const [emailLocal, setEmailLocal] = useState("");
-  const [gender, setGender] = useState<"m" | "f" | null>(null);
-  const [birthDate, setBirthDate] = useState("");
-  const [phone, setPhone] = useState("+7");
-  const [timezone, setTimezone] = useState(TIMEZONES[1]);
+
+  const [step, setStep] = useState<Step>("account");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [pendingId, setPendingId] = useState("");
+  const [deepLink, setDeepLink] = useState("");
+  const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [loginError, setLoginError] = useState("");
-  const [loginStatus, setLoginStatus] = useState<
-    "idle" | "checking" | "free" | "taken"
-  >("idle");
-  const [emailError, setEmailError] = useState("");
-  const [emailStatus, setEmailStatus] = useState<
-    "idle" | "checking" | "free" | "taken" | "invalid"
-  >("idle");
-  const [checkingLogin, setCheckingLogin] = useState(false);
-  const [freeSuggestions, setFreeSuggestions] = useState<string[]>([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const onTurnstile = useCallback((t: string | null) => {
+    setTurnstileToken(t);
+  }, []);
 
-  const emailLocalClean = emailLocal.trim().toLowerCase();
-  const fullEmail = emailLocalClean
-    ? `${emailLocalClean}@${MAIL_DOMAIN}`
-    : "";
-  const emailValid = emailLocalClean.length >= 3;
+  const strength = getPasswordStrength(password);
+  const passOk =
+    password.length >= 8 && password === password2 && strength.score >= 2;
+  const userOk = /^[a-z0-9][a-z0-9._-]{2,28}[a-z0-9]$/i.test(username.trim());
 
-  const baseSuggestions = useMemo(
-    () => suggestLogins(firstName, lastName),
-    [firstName, lastName],
-  );
-
-  const steps: Step[] = ["name", "login", "details", "password"];
-  const stepIndex = steps.indexOf(step);
-
-  const canContinueName =
-    firstName.trim().length >= 2 && lastName.trim().length >= 2;
-  const canContinueLogin =
-    login.trim().length >= 3 &&
-    loginStatus !== "taken" &&
-    emailValid &&
-    emailStatus !== "taken" &&
-    emailStatus !== "invalid";
-  const canContinueDetails = true;
-  const canSubmit =
-    password.length >= 8 &&
-    getPasswordStrength(password).score >= 2 &&
-    password === password2 &&
-    canContinueLogin;
-
-  useEffect(() => {
-    if (step !== "login") return;
-    let cancelled = false;
-    (async () => {
-      setLoadingSuggestions(true);
-      const candidates = expandSuggestions(baseSuggestions);
-      if (!candidates.length) {
-        if (!cancelled) {
-          setFreeSuggestions([]);
-          setLoadingSuggestions(false);
-        }
-        return;
-      }
-      try {
-        const res = await fetch(
-          `/api/auth/check?logins=${encodeURIComponent(candidates.join(","))}`,
-        );
-        const json = await res.json();
-        if (cancelled || !json.ok) return;
-        const results = json.data.results as Record<string, boolean>;
-        const free = candidates.filter((c) => results[c]);
-        setFreeSuggestions(free.slice(0, 6));
-        if (!login && free[0]) {
-          setLogin(free[0]);
-          if (!emailLocal) setEmailLocal(free[0]);
-        }
-      } catch {
-        if (!cancelled) setFreeSuggestions(baseSuggestions);
-      } finally {
-        if (!cancelled) setLoadingSuggestions(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, baseSuggestions]);
-
-  useEffect(() => {
-    if (step !== "login") return;
-    const value = login.trim().toLowerCase();
-    if (value.length < 3) {
-      setLoginStatus("idle");
-      setLoginError("");
-      return;
-    }
-    setLoginStatus("checking");
-    const t = window.setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `/api/auth/check?login=${encodeURIComponent(value)}`,
-        );
-        const json = await res.json();
-        if (!json.ok) {
-          setLoginStatus("idle");
-          return;
-        }
-        if (json.data.available) {
-          setLoginStatus("free");
-          setLoginError("");
-        } else {
-          setLoginStatus("taken");
-          setLoginError(`Логин @${value} уже занят`);
-        }
-      } catch {
-        setLoginStatus("idle");
-      }
-    }, 350);
-    return () => window.clearTimeout(t);
-  }, [login, step]);
-
-  useEffect(() => {
-    if (step !== "login") return;
-    if (emailLocalClean.length < 3) {
-      setEmailStatus("idle");
-      setEmailError("");
-      return;
-    }
-    setEmailStatus("checking");
-    const t = window.setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `/api/auth/check?email=${encodeURIComponent(fullEmail)}`,
-        );
-        const json = await res.json();
-        if (!json.ok) {
-          setEmailStatus("idle");
-          return;
-        }
-        if (json.data.available) {
-          setEmailStatus("free");
-          setEmailError("");
-        } else {
-          setEmailStatus("taken");
-          setEmailError(`Адрес ${fullEmail} уже занят`);
-        }
-      } catch {
-        setEmailStatus("idle");
-      }
-    }, 350);
-    return () => window.clearTimeout(t);
-  }, [emailLocalClean, fullEmail, step]);
-
-  async function goDetails() {
-    if (!canContinueLogin) return;
-    setCheckingLogin(true);
-    setLoginError("");
-    setEmailError("");
-    try {
-      const loginVal = login.trim().toLowerCase();
-      const res = await fetch(
-        `/api/auth/check?login=${encodeURIComponent(loginVal)}&email=${encodeURIComponent(fullEmail)}`,
-      );
-      const json = await res.json();
-      if (!json.ok) {
-        setLoginError("Не удалось проверить данные");
-        return;
-      }
-      const conflicts = (json.data.conflicts || []) as string[];
-      if (conflicts.includes("login")) {
-        setLoginStatus("taken");
-        setLoginError(`Логин @${loginVal} уже занят — выберите другой`);
-        return;
-      }
-      if (conflicts.includes("email")) {
-        setEmailStatus("taken");
-        setEmailError(`Адрес ${fullEmail} уже занят`);
-        return;
-      }
-      setStep("details");
-    } catch {
-      setLoginError("Сеть недоступна");
-    } finally {
-      setCheckingLogin(false);
-    }
-  }
-
-  async function submit() {
+  async function startRegistration() {
     setLoading(true);
     setError("");
     try {
-      const digits = phoneDigits(phone);
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          login: login.trim().toLowerCase(),
-          password,
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          displayName: (displayName || firstName).trim(),
-          gender,
-          birthDate: birthDate || null,
-          phone: digits.length === 11 ? phone : null,
-          timezone,
-          email: fullEmail,
-        }),
-      });
-      const json = await res.json();
-      if (!json.ok) {
-        setError(json.error?.message || "Ошибка регистрации");
+      if (!turnstileToken) {
+        setError("Пройдите проверку Turnstile");
         return;
       }
-      const u = json.data?.user;
+      const res = await idRegisterStart({
+        username: username.trim().toLowerCase(),
+        password,
+        turnstileToken,
+        service: serviceId || undefined,
+      });
+      if (!res.ok) {
+        setError(res.error.message || "Не удалось начать регистрацию");
+        return;
+      }
+      setPendingId(res.data.pendingId);
+      setDeepLink(res.data.telegramDeepLink);
+      setStep("telegram");
+    } catch {
+      setError("Сеть недоступна");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function verifyCode() {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await idRegisterVerify(pendingId, code.trim());
+      if (!res.ok) {
+        setError(res.error.message || "Неверный код");
+        return;
+      }
+      const u = res.data.user;
       if (u?.id) {
         const { rememberAccount } = await import("@/lib/remembered-accounts");
         rememberAccount({
@@ -302,6 +125,27 @@ function RegisterInner() {
     }
   }
 
+  async function resend() {
+    setLoading(true);
+    setError("");
+    try {
+      if (!turnstileToken) {
+        setError("Обновите проверку Turnstile и повторите");
+        return;
+      }
+      const res = await idRegisterResend(pendingId, turnstileToken);
+      if (!res.ok) {
+        setError(res.error.message || "Не удалось отправить код");
+        return;
+      }
+      setStep("code");
+    } catch {
+      setError("Сеть недоступна");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#0c0d10] text-white flex flex-col">
       <AuthBrandHeader brand={brand} />
@@ -313,397 +157,132 @@ function RegisterInner() {
               {brand.registerTitle}
             </h1>
             <p className="mt-1.5 text-[14px] text-white/45 font-[family-name:var(--font-manrope)]">
-              {step === "name" && "Как вас зовут?"}
-              {step === "login" && "Логин и почта"}
-              {step === "details" && "Персональные данные"}
-              {step === "password" && "Придумайте пароль"}
+              {step === "account" && "Логин, пароль и подтверждение"}
+              {step === "telegram" && "Подтвердите аккаунт в Telegram"}
+              {step === "code" && "Введите код из Telegram"}
             </p>
           </div>
 
-          <div className="flex gap-1.5 mb-5">
-            {steps.map((s, i) => (
-              <div
-                key={s}
-                className={cn(
-                  "h-1 flex-1 rounded-full transition-colors",
-                  stepIndex >= i ? "bg-[#0066ff]" : "bg-[#24262e]",
-                )}
+          {step === "account" && (
+            <div className="space-y-3">
+              <TextField
+                label="Логин"
+                value={username}
+                onChange={(v) => setUsername(v.toLowerCase())}
+                autoComplete="username"
               />
-            ))}
-          </div>
-
-          <AnimatePresence mode="wait">
-            {step === "name" && (
-              <motion.form
-                key="name"
-                initial={{ opacity: 0, x: 12 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -12 }}
-                transition={{ duration: 0.18 }}
-                className="flex flex-col gap-3"
-                autoComplete="off"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!canContinueName) return;
-                  if (!displayName) setDisplayName(firstName.trim());
-                  setStep("login");
-                }}
+              <TextField
+                label="Пароль"
+                type="password"
+                value={password}
+                onChange={setPassword}
+                autoComplete="new-password"
+              />
+              <PasswordStrengthBar password={password} />
+              <TextField
+                label="Повторите пароль"
+                type="password"
+                value={password2}
+                onChange={setPassword2}
+                autoComplete="new-password"
+              />
+              <TurnstileField onToken={onTurnstile} className="pt-1" />
+              {error && (
+                <p className="text-[13px] text-red-400/90">{error}</p>
+              )}
+              <button
+                type="button"
+                className={primaryBtn}
+                disabled={loading || !userOk || !passOk || !turnstileToken}
+                onClick={() => void startRegistration()}
               >
-                <TextField
-                  label="Имя"
-                  value={firstName}
-                  onChange={setFirstName}
-                  autoFocus
-                />
-                <TextField
-                  label="Фамилия"
-                  value={lastName}
-                  onChange={setLastName}
-                />
-                <button
-                  type="submit"
-                  className={primaryBtn}
-                  disabled={!canContinueName}
-                >
-                  Продолжить
-                  <ArrowRight size={18} />
-                </button>
-              </motion.form>
-            )}
+                {loading ? "…" : "Продолжить"}
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          )}
 
-            {step === "login" && (
-              <motion.div
-                key="login"
-                initial={{ opacity: 0, x: 12 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -12 }}
-                transition={{ duration: 0.18 }}
-                className="flex flex-col gap-3"
+          {step === "telegram" && (
+            <div className="space-y-4">
+              <p className="text-[14px] text-white/55 leading-relaxed">
+                Откройте бота в Telegram по ссылке — он пришлёт код
+                подтверждения. Один Telegram = один аккаунт.
+              </p>
+              <a
+                href={deepLink}
+                target="_blank"
+                rel="noreferrer"
+                className={cn(primaryBtn, "no-underline")}
               >
-                <div className="relative">
-                  <TextField
-                    label="Логин"
-                    value={login}
-                    onChange={(v) => {
-                      setLoginError("");
-                      setLogin(
-                        v
-                          .toLowerCase()
-                          .replace(/[^a-z0-9._-]/g, "")
-                          .slice(0, 32),
-                      );
-                    }}
-                    autoFocus
-                    spellCheck={false}
-                    inputClassName={cn(
-                      login.trim().length >= 3 && "pr-24",
-                      loginStatus === "taken" &&
-                        "border-red-400 focus:border-red-400",
-                      loginStatus === "free" &&
-                        "border-emerald-400 focus:border-emerald-400",
-                    )}
-                  />
-                  {login.trim().length >= 3 && (
-                    <span
-                      className={cn(
-                        "absolute right-3.5 top-1/2 -translate-y-1/2 text-[12px] font-[family-name:var(--font-manrope)] z-10",
-                        loginStatus === "checking" && "text-white/35",
-                        loginStatus === "free" && "text-emerald-400",
-                        loginStatus === "taken" && "text-red-400",
-                      )}
-                    >
-                      {loginStatus === "checking" && "…"}
-                      {loginStatus === "free" && "свободен"}
-                      {loginStatus === "taken" && "занят"}
-                    </span>
-                  )}
-                </div>
-                {loginError && (
-                  <p className="text-[13px] text-red-400 font-[family-name:var(--font-manrope)]">
-                    {loginError}
-                  </p>
-                )}
-                <div className="relative">
-                  <TextField
-                    label="Почта"
-                    value={emailLocal}
-                    onChange={(v) => {
-                      setEmailError("");
-                      setEmailLocal(sanitizeEmailLocal(v));
-                    }}
-                    autoComplete="off"
-                    spellCheck={false}
-                    inputClassName={cn(
-                      "pr-[128px]",
-                      emailStatus === "taken" &&
-                        "border-red-400 focus:border-red-400",
-                      emailStatus === "free" &&
-                        "border-emerald-400 focus:border-emerald-400",
-                    )}
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[15px] md:text-[16px] text-white/40 font-[family-name:var(--font-manrope)] pointer-events-none">
-                    @{MAIL_DOMAIN}
-                  </span>
-                </div>
-                {emailLocalClean.length >= 3 && (
-                  <p
-                    className={cn(
-                      "text-[12px] -mt-1 font-[family-name:var(--font-manrope)]",
-                      emailStatus === "checking" && "text-white/35",
-                      emailStatus === "free" && "text-emerald-400",
-                      (emailStatus === "taken" || emailStatus === "invalid") &&
-                        "text-red-400",
-                    )}
-                  >
-                    {emailStatus === "checking" && "Проверяем адрес…"}
-                    {emailStatus === "free" && `${fullEmail} — свободен`}
-                    {emailStatus === "taken" && "Адрес занят"}
-                    {emailStatus === "invalid" && "Некорректный адрес"}
-                  </p>
-                )}
-                {emailError && (
-                  <p className="text-[13px] text-red-400 font-[family-name:var(--font-manrope)]">
-                    {emailError}
-                  </p>
-                )}
-                <div>
-                  <p className="mb-2 text-[13px] text-white/40 font-[family-name:var(--font-manrope)]">
-                    Свободные предложения
-                  </p>
-                  {loadingSuggestions ? (
-                    <p className="text-[13px] text-white/35 font-[family-name:var(--font-manrope)]">
-                      Проверяем доступность…
-                    </p>
-                  ) : freeSuggestions.length === 0 ? (
-                    <p className="text-[13px] text-white/35 font-[family-name:var(--font-manrope)]">
-                      Нет свободных предложений — введите свой логин
-                    </p>
-                  ) : (
-                    <div className="flex flex-col gap-1.5">
-                      {freeSuggestions.map((s) => {
-                        const selected = login === s;
-                        return (
-                          <button
-                            key={s}
-                            type="button"
-                            onClick={() => {
-                              setLoginError("");
-                              setLogin(s);
-                              if (!emailLocal) setEmailLocal(s);
-                            }}
-                            className={cn(
-                              "w-full text-left rounded-[12px] px-4 py-3 flex items-center justify-between gap-3 transition-colors font-[family-name:var(--font-manrope)]",
-                              selected
-                                ? "bg-[#0066ff]/20"
-                                : "bg-[#0f1115] hover:bg-[#24262e]",
-                            )}
-                          >
-                            <span className="text-[15px] text-white font-medium truncate">
-                              {s}
-                            </span>
-                            <span className="text-[12px] text-emerald-400/90 shrink-0 inline-flex items-center gap-1.5">
-                              {selected && (
-                                <Check size={14} className="text-[#4d9fff]" />
-                              )}
-                              свободен
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className={primaryBtn}
-                  disabled={
-                    !canContinueLogin ||
-                    checkingLogin ||
-                    loginStatus === "checking" ||
-                    emailStatus === "checking"
-                  }
-                  onClick={() => void goDetails()}
-                >
-                  {checkingLogin ? "Проверка…" : "Продолжить"}
-                  <ArrowRight size={18} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep("name")}
-                  className="h-[48px] rounded-[12px] text-white/45 font-[family-name:var(--font-manrope)] text-[15px] hover:text-white transition-colors"
-                >
-                  Назад
-                </button>
-              </motion.div>
-            )}
-
-            {step === "details" && (
-              <motion.form
-                key="details"
-                initial={{ opacity: 0, x: 12 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -12 }}
-                transition={{ duration: 0.18 }}
-                className="flex flex-col gap-3"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!canContinueDetails) return;
-                  setStep("password");
-                }}
+                Открыть Telegram
+                <ArrowRight size={18} />
+              </a>
+              <button
+                type="button"
+                className="w-full h-[48px] rounded-[12px] border border-white/10 text-[15px] text-white/80"
+                onClick={() => setStep("code")}
               >
-                <TextField
-                  label="Как к вам обращаться?"
-                  value={displayName}
-                  onChange={setDisplayName}
-                  autoFocus
-                />
-                <div className="grid grid-cols-2 gap-2">
-                  {(
-                    [
-                      { id: "m" as const, label: "М" },
-                      { id: "f" as const, label: "Ж" },
-                    ] as const
-                  ).map((g) => (
-                    <button
-                      key={g.id}
-                      type="button"
-                      onClick={() => setGender(g.id)}
-                      className={cn(
-                        "h-[54px] rounded-[12px] text-[16px] font-semibold font-[family-name:var(--font-manrope)] transition-colors",
-                        gender === g.id
-                          ? "bg-[#24262e] text-white"
-                          : "bg-[#0f1115] text-white/50 hover:bg-[#16181e]",
-                      )}
-                    >
-                      {g.label}
-                    </button>
-                  ))}
-                </div>
-                <DateField
-                  label="Дата рождения"
-                  value={birthDate}
-                  onChange={setBirthDate}
-                />
-                <PhoneField value={phone} onChange={setPhone} />
-                <SelectField
-                  label="Часовой пояс"
-                  value={timezone}
-                  options={TIMEZONES}
-                  onChange={setTimezone}
-                />
-                <button type="submit" className={primaryBtn}>
-                  Продолжить
-                  <ArrowRight size={18} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep("login")}
-                  className="h-[48px] rounded-[12px] text-white/45 font-[family-name:var(--font-manrope)] text-[15px] hover:text-white transition-colors"
-                >
-                  Назад
-                </button>
-              </motion.form>
-            )}
-
-            {step === "password" && (
-              <motion.form
-                key="password"
-                initial={{ opacity: 0, x: 12 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -12 }}
-                transition={{ duration: 0.18 }}
-                className="flex flex-col gap-3"
-                autoComplete="off"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (canSubmit) void submit();
-                }}
+                Я получил код
+              </button>
+              <TurnstileField onToken={onTurnstile} />
+              <button
+                type="button"
+                className="w-full text-[13px] text-white/40 underline"
+                disabled={loading}
+                onClick={() => void resend()}
               >
-                <div className="rounded-[12px] bg-[#0f1115] px-4 py-3 mb-1">
-                  <p className="text-[13px] text-white/40 font-[family-name:var(--font-manrope)]">
-                    Ваш pnk ID
-                  </p>
-                  <p className="mt-0.5 text-[15px] font-medium font-[family-name:var(--font-manrope)] text-[#4d9fff]">
-                    @{login}
-                  </p>
-                  <p className="mt-0.5 text-[14px] text-white/55 font-[family-name:var(--font-manrope)] truncate">
-                    {fullEmail}
-                  </p>
-                  <p className="mt-1 text-[13px] text-white/35 font-[family-name:var(--font-manrope)]">
-                    {firstName} {lastName}
-                    {displayName ? ` · ${displayName}` : ""}
-                  </p>
-                </div>
-                <TextField
-                  type="password"
-                  label="Пароль (от 8 символов)"
-                  value={password}
-                  onChange={setPassword}
-                  autoFocus
-                  autoComplete="new-password"
-                />
-                <PasswordStrengthBar password={password} />
-                <TextField
-                  type="password"
-                  label="Повторите пароль"
-                  value={password2}
-                  onChange={setPassword2}
-                  autoComplete="new-password"
-                />
-                {password2.length > 0 && password !== password2 && (
-                  <p className="text-[13px] text-red-400 font-[family-name:var(--font-manrope)]">
-                    Пароли не совпадают
-                  </p>
-                )}
-                {error && (
-                  <p className="text-[13px] text-red-400 font-[family-name:var(--font-manrope)]">
-                    {error}
-                  </p>
-                )}
-                <button
-                  type="submit"
-                  className={primaryBtn}
-                  disabled={!canSubmit || loading}
-                >
-                  {loading ? "Создание…" : brand.registerCta}
-                  <ArrowRight size={18} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep("details")}
-                  className="h-[48px] rounded-[12px] text-white/45 font-[family-name:var(--font-manrope)] text-[15px] hover:text-white transition-colors"
-                >
-                  Назад
-                </button>
-              </motion.form>
-            )}
-          </AnimatePresence>
+                Отправить код ещё раз
+              </button>
+              {error && (
+                <p className="text-[13px] text-red-400/90">{error}</p>
+              )}
+            </div>
+          )}
 
-          <div className="mt-5 px-1 flex items-center justify-between gap-4 font-[family-name:var(--font-manrope)] text-[14px] text-white/40">
+          {step === "code" && (
+            <div className="space-y-3">
+              <TextField
+                label="Код из Telegram"
+                value={code}
+                onChange={(v) => setCode(v.replace(/\D/g, "").slice(0, 6))}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+              />
+              {error && (
+                <p className="text-[13px] text-red-400/90">{error}</p>
+              )}
+              <button
+                type="button"
+                className={primaryBtn}
+                disabled={loading || code.length !== 6}
+                onClick={() => void verifyCode()}
+              >
+                {loading ? "…" : "Создать аккаунт"}
+                <Check size={18} />
+              </button>
+              <button
+                type="button"
+                className="w-full text-[13px] text-white/40"
+                onClick={() => setStep("telegram")}
+              >
+                Назад к Telegram
+              </button>
+            </div>
+          )}
+
+          <p className="mt-5 text-center text-[13px] text-white/40">
+            Уже есть аккаунт?{" "}
             <Link
               href={authHref("/login", { serviceId, next })}
-              className="hover:text-white transition-colors"
+              className="text-[#4d9fff] hover:underline"
             >
-              {brand.loginCta}
+              Войти
             </Link>
-            <Link
-              href="/legal/terms"
-              className="hover:text-white transition-colors"
-            >
-              Условия
-            </Link>
-          </div>
+          </p>
         </div>
-
+        <AuthBrandFooter brand={brand} footerCopy={footerCopy} />
         <ServiceInstallBar brand={brand} />
       </main>
-
-      <AuthBrandFooter
-        brand={brand}
-        footerCopy={footerCopy}
-        serviceId={serviceId}
-        next={next}
-      />
     </div>
   );
 }

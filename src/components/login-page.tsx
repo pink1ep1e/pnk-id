@@ -23,6 +23,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import QRCode from "qrcode";
 import { TextField } from "@/components/text-field";
+import { idBootstrapSession, idLogin, idLogout } from "@/lib/id-api";
 
 type LoginMethod = "password" | "qr";
 type View = "picker" | "methods";
@@ -240,7 +241,7 @@ function LoginInner() {
   const handleRemoveAccount = (account: RememberedAccount) => {
     if (current?.user?.id === account.id) {
       markAccountSignedOut(account.id);
-      void fetch("/api/auth/logout", { method: "POST" });
+      void idLogout();
       setCurrent(null);
     } else {
       removeRememberedAccount(account.id);
@@ -254,11 +255,9 @@ function LoginInner() {
     (async () => {
       refreshRemembered();
       try {
-        const res = await fetch("/api/auth/me", { cache: "no-store" });
-        const json = await res.json();
+        const user = await idBootstrapSession();
         if (cancelled) return;
-        if (json.ok && json.data?.user) {
-          const user = json.data.user;
+        if (user) {
           rememberAccount({
             id: user.id,
             login: user.login,
@@ -267,9 +266,15 @@ function LoginInner() {
             avatarUrl: user.avatarUrl,
           });
           setCurrent({
-            user,
-            authenticatedAt: json.data.authenticatedAt || json.data.lastSeenAt || null,
-            needsReauth: Boolean(json.data.needsReauth),
+            user: {
+              id: user.id,
+              login: user.login,
+              email: user.email,
+              displayName: user.displayName,
+              avatarUrl: user.avatarUrl,
+            },
+            authenticatedAt: user.lastLoginAt || null,
+            needsReauth: false,
           });
           refreshRemembered();
         } else {
@@ -427,17 +432,12 @@ function LoginInner() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ login, password }),
-      });
-      const json = await res.json();
+      const json = await idLogin(login.trim().toLowerCase(), password);
       if (!json.ok) {
         setError(json.error?.message || "Ошибка входа");
         return;
       }
-      const u = json.data?.user;
+      const u = json.data.user;
       if (u?.id) {
         rememberAccount({
           id: u.id,
