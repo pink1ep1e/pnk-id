@@ -13,12 +13,22 @@ const csv = (fallback: string) =>
 
 /** Parse JSON object of PEM strings. Handles dotenv expanding \\n inside "double quotes". */
 function parseJsonStringRecord(raw: string): unknown {
-  try {
-    return JSON.parse(raw);
-  } catch {
-    // dotenv: JWT_PRIVATE_KEYS="...\\n..." → real newlines → invalid JSON
-    return JSON.parse(raw.replace(/\r?\n/g, '\\n'));
+  const attempts = [
+    raw,
+    // dotenv: "...\n..." → real newlines → invalid JSON
+    raw.replace(/\r\n/g, '\\n').replace(/\n/g, '\\n').replace(/\r/g, '\\n'),
+    // strip accidental wrapping quotes left in the value
+    raw.replace(/^['"]|['"]$/g, ''),
+  ];
+  let lastErr: unknown;
+  for (const candidate of attempts) {
+    try {
+      return JSON.parse(candidate);
+    } catch (err) {
+      lastErr = err;
+    }
   }
+  throw lastErr;
 }
 
 const jsonStringRecord = z.string().transform((raw, ctx) => {
@@ -48,7 +58,11 @@ const jsonStringRecord = z.string().transform((raw, ctx) => {
     }
     return out;
   } catch {
-    ctx.addIssue({ code: 'custom', message: 'Invalid JSON' });
+    const nl = (raw.match(/\r?\n/g) ?? []).length;
+    ctx.addIssue({
+      code: 'custom',
+      message: `Invalid JSON (len=${raw.length}, newlines=${nl})`,
+    });
     return z.NEVER;
   }
 });
