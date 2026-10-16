@@ -8,22 +8,29 @@ export class CaptchaService {
   constructor(private readonly config: AppConfigService) {}
 
   async verifyTurnstile(token: string, ip: string): Promise<boolean> {
-    if (!token.trim()) {
+    const response = token.trim();
+    if (!response) {
       return false;
     }
 
     // Dev/test bypass when secret is explicitly marked
-    const secret = this.config.raw.TURNSTILE_SECRET_KEY;
+    let secret = this.config.raw.TURNSTILE_SECRET_KEY.trim();
+    // Guard against quoted values pasted into .env
+    if (
+      (secret.startsWith('"') && secret.endsWith('"')) ||
+      (secret.startsWith("'") && secret.endsWith("'"))
+    ) {
+      secret = secret.slice(1, -1);
+    }
     if (secret.startsWith('dev-') || secret.startsWith('test-')) {
-      return token.length > 0;
+      return response.length > 0;
     }
 
-    const body = new URLSearchParams({
-      secret,
-      response: token,
-    });
+    const form = new URLSearchParams();
+    form.set('secret', secret);
+    form.set('response', response);
     if (ip && ip !== 'unknown') {
-      body.set('remoteip', ip);
+      form.set('remoteip', ip);
     }
 
     try {
@@ -31,24 +38,39 @@ export class CaptchaService {
         'https://challenges.cloudflare.com/turnstile/v0/siteverify',
         {
           method: 'POST',
-          headers: { 'content-type': 'application/x-www-form-urlencoded' },
-          body,
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: form.toString(),
         },
       );
 
-      if (!res.ok) {
-        this.log.warn(`Turnstile HTTP ${res.status}`);
-        return false;
-      }
-
-      const data = (await res.json()) as {
+      const raw = await res.text();
+      let data: {
         success?: boolean;
         'error-codes'?: string[];
         hostname?: string;
-      };
+      } = {};
+      try {
+        data = JSON.parse(raw) as typeof data;
+      } catch {
+        this.log.warn(
+          `Turnstile HTTP ${res.status} non-JSON body=${raw.slice(0, 200)} tokenLen=${response.length}`,
+        );
+        return false;
+      }
+
+      if (!res.ok) {
+        this.log.warn(
+          `Turnstile HTTP ${res.status} codes=${(data['error-codes'] ?? []).join(',') || '-'} body=${raw.slice(0, 200)} tokenLen=${response.length}`,
+        );
+        return false;
+      }
+
       if (!data.success) {
         this.log.warn(
-          `Turnstile rejected: ${(data['error-codes'] ?? []).join(',') || 'unknown'} hostname=${data.hostname ?? '-'}`,
+          `Turnstile rejected: ${(data['error-codes'] ?? []).join(',') || 'unknown'} hostname=${data.hostname ?? '-'} tokenLen=${response.length}`,
         );
       }
       return data.success === true;
